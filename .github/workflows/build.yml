@@ -34,4 +34,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: educatorllm-windows-installer
-          path: src-tauri/target/
+          path: src-tauri/target/release/bundle/
