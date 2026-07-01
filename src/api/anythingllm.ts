@@ -1,4 +1,4 @@
-import { anythingLLMConfig, isConfigured } from "../config/anythingllm.config";
+import { isConfigured, loadSettings, requestTimeoutMs } from "../config/anythingllm.config";
 
 /**
  * Thin client for AnythingLLM Desktop's local REST API.
@@ -18,10 +18,13 @@ export type AnythingLLMErrorKind =
   | "model_error"
   | "unknown";
 
-function buildHeaders(): HeadersInit {
+const NOT_CONFIGURED_MESSAGE =
+  "EducatorLLM isn't set up yet — open Settings and add your AnythingLLM API key and workspace.";
+
+function buildHeaders(apiKey: string): HeadersInit {
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${anythingLLMConfig.apiKey}`,
+    Authorization: `Bearer ${apiKey}`,
   };
 }
 
@@ -33,20 +36,16 @@ export async function checkConnection(): Promise<
   { ok: true } | { ok: false; error: AnythingLLMErrorKind; message: string }
 > {
   if (!isConfigured()) {
-    return {
-      ok: false,
-      error: "not_configured",
-      message:
-        "EducatorLLM isn't set up yet — add your AnythingLLM API key and workspace slug to .env.",
-    };
+    return { ok: false, error: "not_configured", message: NOT_CONFIGURED_MESSAGE };
   }
 
+  const settings = loadSettings();
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5_000);
-    const res = await fetch(`${anythingLLMConfig.baseUrl}/api/v1/workspaces`, {
+    const res = await fetch(`${settings.baseUrl}/api/v1/workspaces`, {
       method: "GET",
-      headers: buildHeaders(),
+      headers: buildHeaders(settings.apiKey),
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -93,23 +92,19 @@ export async function sendChatMessage(
   sessionId: string,
 ): Promise<ChatResult> {
   if (!isConfigured()) {
-    return {
-      ok: false,
-      error: "not_configured",
-      message:
-        "EducatorLLM isn't set up yet — add your AnythingLLM API key and workspace slug to .env.",
-    };
+    return { ok: false, error: "not_configured", message: NOT_CONFIGURED_MESSAGE };
   }
 
+  const settings = loadSettings();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), anythingLLMConfig.requestTimeoutMs);
+  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
 
   try {
     const res = await fetch(
-      `${anythingLLMConfig.baseUrl}/api/v1/workspace/${anythingLLMConfig.workspaceSlug}/chat`,
+      `${settings.baseUrl}/api/v1/workspace/${settings.workspaceSlug}/chat`,
       {
         method: "POST",
-        headers: buildHeaders(),
+        headers: buildHeaders(settings.apiKey),
         signal: controller.signal,
         body: JSON.stringify({
           message,
@@ -135,7 +130,7 @@ export async function sendChatMessage(
       return {
         ok: false,
         error: "workspace_not_found",
-        message: `Workspace "${anythingLLMConfig.workspaceSlug}" wasn't found. Check the slug in .env.`,
+        message: `Workspace "${settings.workspaceSlug}" wasn't found. Check the workspace in Settings.`,
       };
     }
     if (!res.ok) {
