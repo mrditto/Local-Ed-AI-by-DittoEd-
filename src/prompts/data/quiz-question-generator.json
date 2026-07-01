@@ -3,5 +3,5 @@
   "title": "Quiz Question Generator",
   "description": "Generate a mixed set of quiz questions for a topic, with an answer key.",
   "category": "assessment",
-  "template": "Help me write quiz questions. Ask for the subject, grade level, topic, and number of questions if I haven't said them yet. Produce a mix of multiple-choice and short-answer questions at an appropriate difficulty for the grade level, followed by a separate answer key at the end clearly labeled 'Answer Key'."
+  "template": "Help me write quiz questions. Ask for the subject, grade level, topic, and number of questions if I haven't said them yet. Then follow these rules exactly: 1) Write exactly the requested number of questions — count them before answering. 2) Number them 1, 2, 3, and so on. 3) Mix multiple-choice and short-answer. 4) Do NOT put any answers next to the questions. 5) After the last question, write the heading 'Answer Key' and list every answer by question number."
 }
