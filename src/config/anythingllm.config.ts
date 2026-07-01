@@ -19,8 +19,10 @@ export const anythingLLMConfig = {
   /** Workspace slug that holds the educator-facing model/prompt config. */
   workspaceSlug: readEnv(import.meta.env.VITE_ANYTHINGLLM_WORKSPACE_SLUG, ""),
 
-  /** Request timeout in ms before we treat a chat call as hung. */
-  requestTimeoutMs: 60_000,
+  /** Request timeout in ms before we treat a chat call as hung.
+   *  QA on 2026-07-01 measured ~50s for a first response on typical school
+   *  hardware (model cold-load + generation), so 60s was too tight. */
+  requestTimeoutMs: 120_000,
 };
 
 export function isConfigured(): boolean {
