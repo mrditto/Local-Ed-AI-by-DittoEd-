@@ -1,0 +1,7 @@
+{
+  "id": "text-leveler",
+  "title": "Text Leveler",
+  "description": "Rewrite any passage at a different reading level, with key vocabulary.",
+  "category": "differentiation",
+  "template": "I'll paste a text passage. Ask me for the target grade or reading level if I haven't given it. Rewrite the passage at that level, keeping all key facts and the original meaning — do not add information that isn't in the original. After the rewrite, list 5 key vocabulary words from the passage with student-friendly definitions. Do not include any student names or identifying details."
+}

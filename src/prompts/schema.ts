@@ -17,7 +17,8 @@ export type PromptCategory =
   | "assessment"
   | "feedback"
   | "communication"
-  | "engagement";
+  | "engagement"
+  | "differentiation";
 
 export function isValidPrompt(value: unknown): value is Prompt {
   if (typeof value !== "object" || value === null) return false;

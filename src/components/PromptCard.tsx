@@ -7,6 +7,7 @@ const CATEGORY_LABEL: Record<Prompt["category"], string> = {
   feedback: "Feedback",
   communication: "Communication",
   engagement: "Engagement",
+  differentiation: "Differentiation",
 };
 
 interface PromptCardProps {
