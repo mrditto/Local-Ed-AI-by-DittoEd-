@@ -1,0 +1,7 @@
+{
+  "id": "rubric-generator",
+  "title": "Rubric Generator",
+  "description": "Build a scoring rubric for an assignment with clear criteria and performance levels.",
+  "category": "assessment",
+  "template": "Help me build a grading rubric. Ask me for the assignment type, grade level, and the 3-5 things I most want to assess if I haven't said them yet. Then produce a rubric table with those criteria as rows and 4 performance levels as columns (e.g., Exemplary / Proficient / Developing / Beginning), with a short description in each cell."
+}

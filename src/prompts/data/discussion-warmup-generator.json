@@ -1,0 +1,7 @@
+{
+  "id": "discussion-warmup-generator",
+  "title": "Discussion & Warm-Up Generator",
+  "description": "Generate discussion questions or a quick warm-up activity for a topic.",
+  "category": "engagement",
+  "template": "Help me generate discussion questions or a 5-minute warm-up activity for a topic. Ask for the subject, grade level, and topic if I haven't given them. Produce 4-6 open-ended discussion questions ordered from easiest to most challenging, plus one optional quick warm-up activity idea."
+}

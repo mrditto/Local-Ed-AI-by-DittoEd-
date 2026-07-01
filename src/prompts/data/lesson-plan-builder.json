@@ -1,0 +1,7 @@
+{
+  "id": "lesson-plan-builder",
+  "title": "Lesson Plan Builder",
+  "description": "Draft a single-day lesson plan with objectives, activities, and a quick check for understanding.",
+  "category": "planning",
+  "template": "Help me draft a lesson plan. Ask me for the grade level, subject, topic, and length of the class period if I haven't given them yet. Then produce: a learning objective, a short warm-up activity, the main instructional sequence with rough timing, a formative check for understanding, and a closing activity. Keep it practical for a single class period. Do not include any real student names or identifying details."
+}

@@ -1,0 +1,7 @@
+{
+  "id": "quiz-question-generator",
+  "title": "Quiz Question Generator",
+  "description": "Generate a mixed set of quiz questions for a topic, with an answer key.",
+  "category": "assessment",
+  "template": "Help me write quiz questions. Ask for the subject, grade level, topic, and number of questions if I haven't said them yet. Produce a mix of multiple-choice and short-answer questions at an appropriate difficulty for the grade level, followed by a separate answer key at the end clearly labeled 'Answer Key'."
+}

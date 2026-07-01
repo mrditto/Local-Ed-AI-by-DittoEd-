@@ -1,0 +1,7 @@
+{
+  "id": "unit-overview-outline",
+  "title": "Unit Overview Outline",
+  "description": "Sketch a multi-lesson unit outline from a topic and target duration.",
+  "category": "planning",
+  "template": "Help me outline a teaching unit. Ask for the subject, grade level, topic, and number of class periods if I haven't provided them. Then produce a day-by-day outline (one line per day) covering key concepts, a suggested culminating assessment, and any prerequisite knowledge students should already have. Keep suggestions general enough to adapt to my specific classroom."
+}

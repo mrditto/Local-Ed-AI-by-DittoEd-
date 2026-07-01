@@ -1,0 +1,7 @@
+{
+  "id": "progress-note-drafter",
+  "title": "Progress Note Drafter",
+  "description": "Draft a brief, factual classroom progress note from bullet-point observations.",
+  "category": "feedback",
+  "template": "I'll give you bullet points describing a student's general classroom progress (participation, effort, work habits). Turn them into a short, neutral, factual paragraph suitable for a progress note or report card comment. Do not infer anything I didn't state, and do not make eligibility, placement, or disciplinary recommendations — flag if my notes seem to call for that kind of decision instead of a progress comment."
+}
