@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { sendChatMessage, type AnythingLLMErrorKind } from "../api/anythingllm";
 
 export interface ChatMessage {
@@ -13,6 +13,9 @@ function newId(): string {
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // One AnythingLLM thread per chat session — keeps context small and
+  // prevents history bleeding between prompts/sessions.
+  const sessionIdRef = useRef(`edu-${newId()}`);
   const [isSending, setIsSending] = useState(false);
   const [lastErrorKind, setLastErrorKind] = useState<AnythingLLMErrorKind | null>(null);
 
@@ -24,7 +27,7 @@ export function useChat() {
     setMessages((prev) => [...prev, { id: newId(), role: "user", text: trimmed }]);
     setIsSending(true);
 
-    const result = await sendChatMessage(trimmed);
+    const result = await sendChatMessage(trimmed, sessionIdRef.current);
 
     if (result.ok) {
       setMessages((prev) => [...prev, { id: newId(), role: "assistant", text: result.text }]);
@@ -39,6 +42,7 @@ export function useChat() {
   const reset = useCallback(() => {
     setMessages([]);
     setLastErrorKind(null);
+    sessionIdRef.current = `edu-${newId()}`;
   }, []);
 
   return { messages, isSending, lastErrorKind, sendMessage, reset };

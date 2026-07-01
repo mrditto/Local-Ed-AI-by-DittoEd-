@@ -88,7 +88,10 @@ export async function checkConnection(): Promise<
  * model's reply. Non-streaming for Phase 1 — streaming can be added later
  * without changing this function's external shape.
  */
-export async function sendChatMessage(message: string): Promise<ChatResult> {
+export async function sendChatMessage(
+  message: string,
+  sessionId: string,
+): Promise<ChatResult> {
   if (!isConfigured()) {
     return {
       ok: false,
@@ -111,6 +114,11 @@ export async function sendChatMessage(message: string): Promise<ChatResult> {
         body: JSON.stringify({
           message,
           mode: "chat",
+          // Isolate each in-app chat session in its own AnythingLLM thread.
+          // Without this, every request replays the workspace's entire
+          // accumulated history — context grows unbounded across sessions,
+          // which wastes tokens and eventually overwhelms small local models.
+          sessionId,
         }),
       },
     );
