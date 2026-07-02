@@ -3,5 +3,35 @@
   "title": "Lesson Plan Builder",
   "description": "Draft a single-day lesson plan with objectives, activities, and a quick check for understanding.",
   "category": "planning",
-  "template": "Help me draft a lesson plan. Ask me for the grade level, subject, topic, and length of the class period if I haven't given them yet. Then produce: a learning objective, a short warm-up activity, the main instructional sequence with rough timing, a formative check for understanding, and a closing activity. Keep it practical for a single class period. Do not include any real student names or identifying details."
+  "template": "Help me draft a lesson plan for {gradeLevel} {subject} on {topic}. The class period length is {classPeriodLength}. Then produce: a learning objective, a short warm-up activity, the main instructional sequence with rough timing, a formative check for understanding, and a closing activity. Keep it practical for a single class period. Do not include any real student names or identifying details.",
+  "fields": [
+    {
+      "id": "gradeLevel",
+      "label": "Grade level",
+      "type": "text",
+      "placeholder": "e.g., Grade 6",
+      "required": true
+    },
+    {
+      "id": "subject",
+      "label": "Subject",
+      "type": "text",
+      "placeholder": "e.g., Science",
+      "required": true
+    },
+    {
+      "id": "topic",
+      "label": "Topic",
+      "type": "text",
+      "placeholder": "e.g., Food webs",
+      "required": true
+    },
+    {
+      "id": "classPeriodLength",
+      "label": "Class period length",
+      "type": "text",
+      "placeholder": "e.g., 45 minutes",
+      "required": true
+    }
+  ]
 }

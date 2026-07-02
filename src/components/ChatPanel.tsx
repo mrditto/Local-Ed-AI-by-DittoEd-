@@ -10,16 +10,18 @@ import type { Prompt } from "../prompts";
 interface ChatPanelProps {
   prompt: Prompt;
   onBack: () => void;
+  initialMessage?: string;
 }
 
 type ConnectionState = "checking" | "ok" | "error";
 
-export function ChatPanel({ prompt, onBack }: ChatPanelProps) {
+export function ChatPanel({ prompt, onBack, initialMessage }: ChatPanelProps) {
   const { messages, isSending, sendMessage } = useChat();
-  const [draft, setDraft] = useState(prompt.template);
+  const [draft, setDraft] = useState(initialMessage ? "" : prompt.template);
   const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
   const [connectionMessage, setConnectionMessage] = useState<string>("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const hasSentInitialMessage = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +42,14 @@ export function ChatPanel({ prompt, onBack }: ChatPanelProps) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (connectionState !== "ok" || hasSentInitialMessage.current) return;
+    const message = initialMessage?.trim();
+    if (!message) return;
+    hasSentInitialMessage.current = true;
+    void sendMessage(message);
+  }, [connectionState, initialMessage, sendMessage]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

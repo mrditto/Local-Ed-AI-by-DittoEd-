@@ -233,6 +233,18 @@ body {
   font-size: 0.95rem;
   background: var(--color-surface);
 }
+.settings-field textarea,
+.settings-field select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  font-family: inherit;
+  font-size: 0.95rem;
+  background: var(--color-surface);
+}
+.settings-field textarea {
+  resize: vertical;
+}
 .settings-hint {
   font-size: 0.78rem;
   color: var(--color-text-muted);
@@ -292,4 +304,30 @@ body {
   background: transparent;
   color: var(--color-primary);
   padding: 6px 8px;
+}
+
+/* Prompt wizard */
+.wizard-panel {
+  max-width: 720px;
+}
+.wizard-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.wizard-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.wizard-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.wizard-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
