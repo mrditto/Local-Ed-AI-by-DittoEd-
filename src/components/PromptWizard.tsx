@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "./ui/Button";
 import type { Prompt, PromptField } from "../prompts";
+import { VerifyFooter } from "./VerifyFooter";
 
 interface PromptWizardProps {
   prompt: Prompt;
@@ -16,15 +17,37 @@ function buildInitialValues(fields: PromptField[]): Record<string, string> {
 }
 
 function composeMessage(
-  template: string,
+  prompt: Prompt,
   fields: PromptField[],
   values: Record<string, string>,
 ): string {
-  return fields.reduce((message, field) => {
+  const composedTemplate = fields.reduce((message, field) => {
     const token = `{${field.id}}`;
     return message.split(token).join((values[field.id] ?? "").trim());
-  }, template);
+  }, prompt.template);
+
+  if (!prompt.grounding) {
+    return composedTemplate;
+  }
+
+  return (
+    composedTemplate +
+    "\n\nAuthoritative reference guidance — base all standards and criteria ONLY on this:\n" +
+    prompt.grounding +
+    "\nIf the request requires legal or policy specifics beyond this guidance, do not answer from memory — say it needs verification and refer to the district resources."
+  );
 }
+
+const REFERRAL_KEYWORDS = [
+  "eligibility",
+  "suspension",
+  "expulsion",
+  "due process",
+  "evaluation timeline",
+  "extended school year",
+  "esy",
+  "placement change",
+];
 
 export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) {
   const fields = prompt.fields ?? [];
@@ -32,6 +55,12 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
 
   const canGenerate = fields.every(
     (field) => !field.required || (values[field.id] ?? "").trim().length > 0,
+  );
+  const hasPolicyKeyword = REFERRAL_KEYWORDS.some((keyword) =>
+    Object.values(values)
+      .join(" ")
+      .toLowerCase()
+      .includes(keyword),
   );
 
   function updateField(fieldId: string, value: string) {
@@ -44,7 +73,7 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canGenerate) return;
-    onGenerate(composeMessage(prompt.template, fields, values));
+    onGenerate(composeMessage(prompt, fields, values));
   }
 
   return (
@@ -100,6 +129,17 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
             )}
           </div>
         ))}
+
+        {hasPolicyKeyword && (
+          <div className="wizard-warning-banner">
+            <p>
+              This looks like a policy or legal question. DittoEd drafts documents — it does not
+              answer policy questions. Check the resources below or contact your special education
+              office.
+            </p>
+            <VerifyFooter />
+          </div>
+        )}
 
         <div className="wizard-actions">
           <Button type="submit" disabled={!canGenerate}>

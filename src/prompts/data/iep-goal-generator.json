@@ -4,6 +4,7 @@
   "description": "Draft measurable SMART IEP goal options from baseline data.",
   "category": "sped",
   "template": "Create 2-3 measurable SMART IEP goal drafts for {gradeLevel} in {skillArea} over {targetTimeframe}, using this current baseline information: {currentBaseline}. Each goal should clearly include condition, behavior, and criterion, and be practical for progress monitoring. Never use a real student's name — write [Student] instead. This is a draft that requires review and approval by the full IEP team; do not make eligibility, placement, or disciplinary determinations.",
+  "grounding": "[PLACEHOLDER — replace with district goal-writing rubric] High-quality SMART IEP goals explicitly state the condition under which the skill is performed, the observable behavior expected, and the measurable criterion for mastery. Goals should be quantifiable, tied to a clear timeframe, and directly referenced to the student's baseline data so progress can be monitored objectively.",
   "fields": [
     {
       "id": "skillArea",
