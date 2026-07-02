@@ -16,7 +16,7 @@ type TestState =
 
 /**
  * One-time (per machine) connection setup. Intended for the person setting
- * up EducatorLLM — teachers shouldn't normally need to see this screen.
+ * up Ditto Ed — teachers shouldn't normally need to see this screen.
  * Values are stored locally on this computer and never sent anywhere else.
  */
 export function SettingsPanel({ onDone }: SettingsPanelProps) {
@@ -48,7 +48,7 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
       <header className="settings-header">
         <h2>Connection Settings</h2>
         <p>
-          EducatorLLM talks to AnythingLLM Desktop running on this computer. Enter the
+          Ditto Ed talks to AnythingLLM Desktop running on this computer. Enter the
           connection details once — they're saved on this machine only and never sent
           anywhere else.
         </p>

@@ -4,8 +4,8 @@
   --color-border: #e2e0db;
   --color-text: #2b2926;
   --color-text-muted: #6b6862;
-  --color-primary: #3a6b5c;
-  --color-primary-hover: #2f5a4d;
+  --color-primary: #1f4e8c;
+  --color-primary-hover: #163a68;
   --color-error-bg: #fdecec;
   --color-error-text: #8a2c2c;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -35,6 +35,10 @@ body {
 .prompt-library-header p {
   color: var(--color-text-muted);
   margin: 0 0 24px;
+}
+.prompt-library-tagline {
+  font-weight: 600;
+  color: var(--color-primary-hover);
 }
 .prompt-grid {
   display: grid;
@@ -191,7 +195,7 @@ body {
   color: var(--color-error-text);
 }
 .connection-banner-success {
-  background: #e8f3ee;
+  background: #e8eff8;
   color: var(--color-primary-hover);
 }
 

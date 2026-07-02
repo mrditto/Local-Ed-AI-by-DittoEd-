@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "EducatorLLM",
+  "productName": "Ditto Ed",
   "version": "0.1.0",
   "identifier": "com.educatorllm.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "EducatorLLM",
+        "title": "Ditto Ed",
         "width": 1100,
         "height": 750
       }
