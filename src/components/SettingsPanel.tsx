@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loadSettings, saveSettings } from "../config/anythingllm.config";
-import { checkConnection } from "../api/anythingllm";
+import { checkConnection, listModels } from "../api/ollama";
 import { Button } from "./ui/Button";
 import { Spinner } from "./ui/Spinner";
 
@@ -22,15 +22,34 @@ type TestState =
 export function SettingsPanel({ onDone }: SettingsPanelProps) {
   const initial = loadSettings();
   const [baseUrl, setBaseUrl] = useState(initial.baseUrl);
-  const [apiKey, setApiKey] = useState(initial.apiKey);
-  const [workspaceSlug, setWorkspaceSlug] = useState(initial.workspaceSlug);
+  const [model, setModel] = useState(initial.model);
   const [testState, setTestState] = useState<TestState>({ kind: "idle" });
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [isRefreshingModels, setIsRefreshingModels] = useState(false);
+  const [modelLoadError, setModelLoadError] = useState<string | null>(null);
+
+  const refreshModels = useCallback(async (baseUrlOverride: string) => {
+    setIsRefreshingModels(true);
+    try {
+      const models = await listModels(baseUrlOverride.trim() || "http://localhost:11434");
+      setAvailableModels(models);
+      setModelLoadError(null);
+    } catch (err) {
+      setAvailableModels([]);
+      setModelLoadError(err instanceof Error ? err.message : "Could not load models from Ollama.");
+    } finally {
+      setIsRefreshingModels(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshModels(initial.baseUrl);
+  }, [initial.baseUrl, refreshModels]);
 
   async function handleSaveAndTest() {
     saveSettings({
-      baseUrl: baseUrl.trim() || "http://localhost:3001",
-      apiKey: apiKey.trim(),
-      workspaceSlug: workspaceSlug.trim(),
+      baseUrl: baseUrl.trim() || "http://localhost:11434",
+      model: model.trim() || "phi4-mini:latest",
     });
     setTestState({ kind: "testing" });
     const result = await checkConnection();
@@ -41,53 +60,70 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
     }
   }
 
-  const canSave = apiKey.trim().length > 0 && workspaceSlug.trim().length > 0;
+  const canSave = baseUrl.trim().length > 0 && model.trim().length > 0;
 
   return (
     <div className="settings-panel">
       <header className="settings-header">
         <h2>Connection Settings</h2>
         <p>
-          DittoEd talks to AnythingLLM Desktop running on this computer. Enter the
-          connection details once — they're saved on this machine only and never sent
-          anywhere else.
+          DittoEd talks directly to Ollama running on this computer. Enter the connection
+          details once — they&apos;re saved on this machine only and never sent anywhere else.
         </p>
       </header>
 
       <div className="settings-field">
-        <label htmlFor="settings-api-key">AnythingLLM API key</label>
-        <input
-          id="settings-api-key"
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.currentTarget.value)}
-          placeholder="Found in AnythingLLM Desktop under Settings → API Keys"
-        />
-      </div>
-
-      <div className="settings-field">
-        <label htmlFor="settings-workspace">Workspace</label>
-        <input
-          id="settings-workspace"
-          type="text"
-          value={workspaceSlug}
-          onChange={(e) => setWorkspaceSlug(e.currentTarget.value)}
-          placeholder="Workspace slug, e.g. my-workspace"
-        />
-      </div>
-
-      <div className="settings-field">
-        <label htmlFor="settings-base-url">AnythingLLM address</label>
+        <label htmlFor="settings-base-url">Ollama address</label>
         <input
           id="settings-base-url"
           type="text"
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.currentTarget.value)}
-          placeholder="http://localhost:3001"
+          placeholder="http://localhost:11434"
         />
         <span className="settings-hint">
-          Leave as-is unless AnythingLLM runs on a different port.
+          Leave as-is unless Ollama runs on a different port.
         </span>
+      </div>
+
+      <div className="settings-field">
+        <div className="settings-field-row">
+          <label htmlFor="settings-model">Model</label>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => void refreshModels(baseUrl)}
+            disabled={isRefreshingModels}
+          >
+            Refresh
+          </Button>
+        </div>
+
+        {availableModels.length > 0 && !modelLoadError ? (
+          <select
+            id="settings-model"
+            value={model}
+            onChange={(e) => setModel(e.currentTarget.value)}
+          >
+            {!availableModels.includes(model) && <option value={model}>{model}</option>}
+            {availableModels.map((availableModel) => (
+              <option key={availableModel} value={availableModel}>
+                {availableModel}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            id="settings-model"
+            type="text"
+            value={model}
+            onChange={(e) => setModel(e.currentTarget.value)}
+            placeholder="phi4-mini:latest"
+          />
+        )}
+
+        {isRefreshingModels && <Spinner label="Loading installed models…" />}
+        {modelLoadError && <span className="settings-hint">{modelLoadError}</span>}
       </div>
 
       <div className="settings-actions">
@@ -104,7 +140,7 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
       {testState.kind === "testing" && <Spinner label="Testing connection…" />}
       {testState.kind === "success" && (
         <div className="connection-banner connection-banner-success">
-          Connected to AnythingLLM — you're all set.
+          Connected to Ollama — you&apos;re all set.
         </div>
       )}
       {testState.kind === "failure" && (

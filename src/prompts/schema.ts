@@ -8,7 +8,7 @@ export interface Prompt {
   title: string;
   description: string;
   category: PromptCategory;
-  /** Sent to AnythingLLM as the opening message when this prompt is selected. */
+  /** Sent to the local model as the opening message when this prompt is selected. */
   template: string;
   fields?: PromptField[];
   grounding?: string;
