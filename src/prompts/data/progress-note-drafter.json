@@ -3,5 +3,14 @@
   "title": "Progress Note Drafter",
   "description": "Draft a brief, factual classroom progress note from bullet-point observations.",
   "category": "feedback",
-  "template": "I'll give you bullet points describing a student's general classroom progress (participation, effort, work habits). Turn them into a short, neutral, factual paragraph suitable for a progress note or report card comment. Do not infer anything I didn't state, and do not make eligibility, placement, or disciplinary recommendations — flag if my notes seem to call for that kind of decision instead of a progress comment."
+  "template": "Turn these bullet points describing a student's general classroom progress (participation, effort, work habits) into a short, neutral, factual paragraph suitable for a progress note or report card comment: {observationsBulletPoints}. Do not infer anything I didn't state, and do not make eligibility, placement, or disciplinary recommendations — flag if my notes seem to call for that kind of decision instead of a progress comment.",
+  "fields": [
+    {
+      "id": "observationsBulletPoints",
+      "label": "Observations bullet points",
+      "type": "textarea",
+      "placeholder": "Paste bullet points (no student names or identifying details).",
+      "required": true
+    }
+  ]
 }

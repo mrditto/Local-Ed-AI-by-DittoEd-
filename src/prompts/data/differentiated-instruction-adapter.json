@@ -3,5 +3,21 @@
   "title": "Differentiated Instruction Adapter",
   "description": "Take an existing activity and suggest variations for different learner needs.",
   "category": "planning",
-  "template": "I'm going to describe a classroom activity or assignment. Suggest 2-3 ways to adapt it: one version with additional scaffolding/support, one on-level version, and one extension for students who finish early or need more challenge. Keep suggestions general — do not ask for or reference any specific student's diagnosis, IEP, or 504 plan; if I mention one, remind me this tool isn't for individualized service planning."
+  "template": "Adapt this classroom activity or assignment for {gradeLevel}: {activityDescription}. Suggest 2-3 ways to adapt it: one version with additional scaffolding/support, one on-level version, and one extension for students who finish early or need more challenge. Keep suggestions general — do not ask for or reference any specific student's diagnosis, IEP, or 504 plan; if I mention one, remind me this tool isn't for individualized service planning.",
+  "fields": [
+    {
+      "id": "activityDescription",
+      "label": "Activity description",
+      "type": "textarea",
+      "placeholder": "Describe the classroom activity or assignment.",
+      "required": true
+    },
+    {
+      "id": "gradeLevel",
+      "label": "Grade level",
+      "type": "text",
+      "placeholder": "e.g., Grade 6",
+      "required": true
+    }
+  ]
 }

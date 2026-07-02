@@ -3,5 +3,21 @@
   "title": "Student Feedback Writer",
   "description": "Turn rough notes on student work into clear, constructive written feedback.",
   "category": "feedback",
-  "template": "I'll share rough notes or observations about a piece of student work. Turn them into 3-5 sentences of constructive feedback: what was done well, one or two specific areas to improve, and one actionable next step. Keep the tone encouraging and age-appropriate. Do not include the student's name — write it so I can paste in a name myself."
+  "template": "Use these rough notes or observations about a piece of student work for {gradeLevel}: {roughNotesOnTheWork}. Turn them into 3-5 sentences of constructive feedback: what was done well, one or two specific areas to improve, and one actionable next step. Keep the tone encouraging and age-appropriate. Do not include the student's name — write it so I can paste in a name myself.",
+  "fields": [
+    {
+      "id": "roughNotesOnTheWork",
+      "label": "Rough notes on the work",
+      "type": "textarea",
+      "placeholder": "Paste notes (no student names).",
+      "required": true
+    },
+    {
+      "id": "gradeLevel",
+      "label": "Grade level",
+      "type": "text",
+      "placeholder": "e.g., Grade 9",
+      "required": true
+    }
+  ]
 }

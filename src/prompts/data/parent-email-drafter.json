@@ -3,5 +3,21 @@
   "title": "Parent/Guardian Email Drafter",
   "description": "Draft a professional email to a parent or guardian from a few bullet points.",
   "category": "communication",
-  "template": "I'll give you a few bullet points about what I need to communicate to a parent or guardian. Draft a professional, warm, and concise email covering those points, with a clear subject line suggestion. Leave placeholders like [Student Name] and [Date] instead of guessing details I haven't given you."
+  "template": "Draft a professional, {tone}, and concise email to a parent or guardian from these key points: {keyPointsToCommunicate}. Include a clear subject line suggestion. Leave placeholders like [Student Name] and [Date] instead of guessing details I haven't given you.",
+  "fields": [
+    {
+      "id": "keyPointsToCommunicate",
+      "label": "Key points to communicate",
+      "type": "textarea",
+      "placeholder": "List key points (no student names — use [Student Name]).",
+      "required": true
+    },
+    {
+      "id": "tone",
+      "label": "Tone",
+      "type": "text",
+      "placeholder": "e.g., warm but direct",
+      "required": true
+    }
+  ]
 }

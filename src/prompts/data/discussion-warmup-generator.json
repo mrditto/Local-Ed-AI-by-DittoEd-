@@ -3,5 +3,28 @@
   "title": "Discussion & Warm-Up Generator",
   "description": "Generate discussion questions or a quick warm-up activity for a topic.",
   "category": "engagement",
-  "template": "Help me generate discussion questions or a 5-minute warm-up activity for a topic. Ask for the subject, grade level, and topic if I haven't given them. Then write exactly 5 open-ended discussion questions, numbered 1-5, ordered from easiest to most challenging. After question 5, add one quick warm-up activity idea under the heading 'Warm-Up'."
+  "template": "Help me generate discussion questions or a 5-minute warm-up activity for {subject}, {gradeLevel}, on {topic}. Then write exactly 5 open-ended discussion questions, numbered 1-5, ordered from easiest to most challenging. After question 5, add one quick warm-up activity idea under the heading 'Warm-Up'.",
+  "fields": [
+    {
+      "id": "subject",
+      "label": "Subject",
+      "type": "text",
+      "placeholder": "e.g., Science",
+      "required": true
+    },
+    {
+      "id": "gradeLevel",
+      "label": "Grade level",
+      "type": "text",
+      "placeholder": "e.g., Grade 5",
+      "required": true
+    },
+    {
+      "id": "topic",
+      "label": "Topic",
+      "type": "text",
+      "placeholder": "e.g., ecosystems",
+      "required": true
+    }
+  ]
 }

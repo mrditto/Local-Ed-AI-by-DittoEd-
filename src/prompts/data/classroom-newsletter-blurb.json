@@ -3,5 +3,21 @@
   "title": "Classroom Newsletter Blurb",
   "description": "Turn a list of updates into a friendly newsletter section for families.",
   "category": "communication",
-  "template": "I'll give you a list of classroom updates or upcoming events. Turn them into a short, friendly newsletter section for families, using clear headers or bullet points, in a positive and inclusive tone."
+  "template": "Turn this list of classroom updates or upcoming events into a short, friendly newsletter section for {audience}: {updatesEventsList}. Use clear headers or bullet points, in a positive and inclusive tone.",
+  "fields": [
+    {
+      "id": "updatesEventsList",
+      "label": "Updates/events list",
+      "type": "textarea",
+      "placeholder": "List classroom updates or upcoming events.",
+      "required": true
+    },
+    {
+      "id": "audience",
+      "label": "Audience",
+      "type": "text",
+      "placeholder": "e.g., families of Grade 4",
+      "required": true
+    }
+  ]
 }
