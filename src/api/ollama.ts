@@ -58,15 +58,38 @@ async function safeReadError(res: Response): Promise<string> {
   }
 }
 
+/** Resolved once per app lifetime; reused on subsequent calls. */
+let _resolvedFetch: typeof globalThis.fetch | undefined;
+
+/**
+ * Returns the Tauri HTTP plugin fetch when running inside a Tauri window,
+ * otherwise falls back to the standard browser fetch.  This means the app
+ * works both as a Tauri desktop app (no CORS/OLLAMA_ORIGINS needed) and in
+ * a plain Vite dev-server browser session.
+ */
+async function resolveFetch(): Promise<typeof globalThis.fetch> {
+  if (_resolvedFetch) return _resolvedFetch;
+
+  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+    const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
+    _resolvedFetch = tauriFetch as unknown as typeof globalThis.fetch;
+  } else {
+    _resolvedFetch = globalThis.fetch.bind(globalThis);
+  }
+
+  return _resolvedFetch;
+}
+
 async function fetchTags(
   baseUrl: string,
   timeoutMs: number,
 ): Promise<OllamaResult<string[]>> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const fetchFn = await resolveFetch();
 
   try {
-    const res = await fetch(`${normalizeBaseUrl(baseUrl)}/api/tags`, {
+    const res = await fetchFn(`${normalizeBaseUrl(baseUrl)}/api/tags`, {
       method: "GET",
       signal: controller.signal,
     });
@@ -138,9 +161,10 @@ export async function sendChat(messages: ChatRequestMessage[]): Promise<OllamaRe
   const settings = loadSettings();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+  const fetchFn = await resolveFetch();
 
   try {
-    const res = await fetch(`${normalizeBaseUrl(settings.baseUrl)}/api/chat`, {
+    const res = await fetchFn(`${normalizeBaseUrl(settings.baseUrl)}/api/chat`, {
       method: "POST",
       signal: controller.signal,
       headers: {
