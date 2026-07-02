@@ -1,4 +1,6 @@
-# EducatorLLM
+# Ditto Ed (formerly EducatorLLM)
+
+Amplifying the teacher, not replacing the magic.
 
 A local, privacy-preserving AI assistant for educators — a prompt library and chat interface running entirely offline against [AnythingLLM Desktop](https://anythingllm.com/) + [Ollama](https://ollama.com/). No data leaves the machine.
 

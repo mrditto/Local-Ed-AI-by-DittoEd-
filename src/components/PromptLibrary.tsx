@@ -28,8 +28,14 @@ export function PromptLibrary({ onSelectPrompt }: PromptLibraryProps) {
   return (
     <div className="prompt-library">
       <header className="prompt-library-header">
-        <h1>EducatorLLM</h1>
-        <p>Pick a prompt to get started. Everything runs locally — nothing leaves this computer.</p>
+        <h1>Ditto Ed</h1>
+        <p>
+          <span className="prompt-library-tagline">
+            Amplifying the teacher, not replacing the magic.
+          </span>
+          <br />
+          Pick a prompt to get started. Everything runs locally — nothing leaves this computer.
+        </p>
       </header>
       <div className="prompt-library-sections">
         {sections.map(({ category, prompts: categoryPrompts }) => (
