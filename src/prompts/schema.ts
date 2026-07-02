@@ -11,6 +11,7 @@ export interface Prompt {
   /** Sent to AnythingLLM as the opening message when this prompt is selected. */
   template: string;
   fields?: PromptField[];
+  grounding?: string;
 }
 
 export interface PromptField {
@@ -53,6 +54,9 @@ export function isValidPrompt(value: unknown): value is Prompt {
   const fieldsAreValid =
     p.fields === undefined ||
     (Array.isArray(p.fields) && p.fields.every((field) => isValidPromptField(field)));
+  const groundingIsValid =
+    p.grounding === undefined ||
+    (typeof p.grounding === "string" && p.grounding.trim().length > 0);
   return (
     typeof p.id === "string" &&
     p.id.length > 0 &&
@@ -62,6 +66,7 @@ export function isValidPrompt(value: unknown): value is Prompt {
     typeof p.category === "string" &&
     typeof p.template === "string" &&
     p.template.length > 0 &&
-    fieldsAreValid
+    fieldsAreValid &&
+    groundingIsValid
   );
 }

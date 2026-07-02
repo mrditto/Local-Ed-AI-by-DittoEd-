@@ -166,6 +166,25 @@ body {
   border-top: 1px dashed var(--color-border);
   padding-top: 6px;
 }
+.verify-footer {
+  margin-top: 8px;
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+}
+.verify-footer-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+.verify-footer-list {
+  margin: 0;
+  padding-left: 18px;
+}
+.verify-footer-list li {
+  margin: 2px 0;
+}
+.verify-footer-list a {
+  color: var(--color-primary-hover);
+}
 
 .chat-input-row {
   display: flex;
@@ -334,4 +353,17 @@ body {
   display: flex;
   justify-content: flex-end;
   margin-top: 8px;
+}
+.wizard-warning-banner {
+  margin-top: 8px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+}
+.wizard-warning-banner p {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
 }

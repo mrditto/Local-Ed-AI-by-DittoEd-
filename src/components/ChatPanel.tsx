@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { useChat } from "../hooks/useChat";
 import { checkConnection } from "../api/anythingllm";
 import { DisclaimerFooter } from "./DisclaimerFooter";
+import { VerifyFooter } from "./VerifyFooter";
 import { Button } from "./ui/Button";
 import { Spinner } from "./ui/Spinner";
 import type { Prompt } from "../prompts";
@@ -85,6 +86,7 @@ export function ChatPanel({ prompt, onBack, initialMessage }: ChatPanelProps) {
               <p>{msg.text}</p>
             )}
             {msg.role === "assistant" && <DisclaimerFooter />}
+            {msg.role === "assistant" && prompt.category === "sped" && <VerifyFooter />}
           </div>
         ))}
         {isSending && <Spinner label="Thinking…" />}
