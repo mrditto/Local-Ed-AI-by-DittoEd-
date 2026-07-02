@@ -28,10 +28,10 @@ export function PromptLibrary({ onSelectPrompt }: PromptLibraryProps) {
   return (
     <div className="prompt-library">
       <header className="prompt-library-header">
-        <h1>Ditto Ed</h1>
+        <h1>DittoEd</h1>
         <p>
           <span className="prompt-library-tagline">
-            Amplifying the teacher, not replacing the magic.
+            Echoing the educator, not replacing the magic.
           </span>
           <br />
           Pick a prompt to get started. Everything runs locally — nothing leaves this computer.
