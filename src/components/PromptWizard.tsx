@@ -133,7 +133,7 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
         {hasPolicyKeyword && (
           <div className="wizard-warning-banner">
             <p>
-              This looks like a policy or legal question. DittoEd drafts documents — it does not
+              This looks like a policy or legal question. Local Ed AI drafts documents — it does not
               answer policy questions. Check the resources below or contact your special education
               office.
             </p>

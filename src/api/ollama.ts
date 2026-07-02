@@ -18,7 +18,7 @@ export type OllamaErrorKind =
   | "unknown";
 
 const NOT_CONFIGURED_MESSAGE =
-  "DittoEd isn't set up yet — open Settings and add your Ollama address and model.";
+  "Local Ed AI isn't set up yet — open Settings and add your Ollama address and model.";
 
 function modelMissingMessage(model: string): string {
   return `The model ${model} isn't downloaded yet. Run 'ollama pull ${model}' or ask your administrator.`;

@@ -67,7 +67,7 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
       <header className="settings-header">
         <h2>Connection Settings</h2>
         <p>
-          DittoEd talks directly to Ollama running on this computer. Enter the connection
+          Local Ed AI talks directly to Ollama running on this computer. Enter the connection
           details once — they&apos;re saved on this machine only and never sent anywhere else.
         </p>
       </header>
