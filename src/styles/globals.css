@@ -40,6 +40,24 @@ body {
   font-weight: 600;
   color: var(--color-primary-hover);
 }
+.assistant-hero-card {
+  margin-bottom: 20px;
+  border-left: 4px solid var(--color-primary);
+  cursor: pointer;
+}
+.assistant-hero-card:hover,
+.assistant-hero-card:focus-visible {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  outline: none;
+}
+.assistant-hero-card h2 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+.assistant-hero-card p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
 .prompt-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

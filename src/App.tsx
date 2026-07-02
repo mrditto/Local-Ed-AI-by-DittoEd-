@@ -5,13 +5,23 @@ import { PromptWizard } from "./components/PromptWizard";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { isConfigured } from "./config/anythingllm.config";
 import { Button } from "./components/ui/Button";
-import type { Prompt } from "./prompts";
+import { prompts, type Prompt } from "./prompts";
+import { buildAssistantPreamble } from "./prompts/assistantPreamble";
 
-type View = "library" | "wizard" | "chat" | "settings";
+type View = "library" | "wizard" | "chat" | "assistant" | "settings";
+
+const ASSISTANT_PROMPT: Prompt = {
+  id: "ask-dittoed",
+  title: "Ask DittoEd",
+  description: "",
+  category: "engagement",
+  template: "",
+};
 
 function App() {
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
   const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
+  const assistantPreamble = buildAssistantPreamble(prompts);
   // First launch on an unconfigured machine goes straight to Settings.
   const [view, setView] = useState<View>(isConfigured() ? "library" : "settings");
 
@@ -24,6 +34,12 @@ function App() {
   function openChatFromWizard(message: string) {
     setInitialMessage(message);
     setView("chat");
+  }
+
+  function openAssistant() {
+    setActivePrompt(ASSISTANT_PROMPT);
+    setInitialMessage(undefined);
+    setView("assistant");
   }
 
   function backToLibrary() {
@@ -49,7 +65,17 @@ function App() {
       {view === "chat" && activePrompt && (
         <ChatPanel prompt={activePrompt} onBack={backToLibrary} initialMessage={initialMessage} />
       )}
-      {view === "library" && <PromptLibrary onSelectPrompt={openPrompt} />}
+      {view === "assistant" && activePrompt && (
+        <ChatPanel
+          prompt={activePrompt}
+          onBack={backToLibrary}
+          initialMessage={initialMessage}
+          messagePreamble={assistantPreamble}
+        />
+      )}
+      {view === "library" && (
+        <PromptLibrary onSelectPrompt={openPrompt} onAskAssistant={openAssistant} />
+      )}
     </main>
   );
 }

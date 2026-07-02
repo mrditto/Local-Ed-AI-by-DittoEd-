@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useChat } from "../hooks/useChat";
 import { checkConnection } from "../api/anythingllm";
@@ -12,17 +12,19 @@ interface ChatPanelProps {
   prompt: Prompt;
   onBack: () => void;
   initialMessage?: string;
+  messagePreamble?: string;
 }
 
 type ConnectionState = "checking" | "ok" | "error";
 
-export function ChatPanel({ prompt, onBack, initialMessage }: ChatPanelProps) {
+export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: ChatPanelProps) {
   const { messages, isSending, sendMessage } = useChat();
   const [draft, setDraft] = useState(initialMessage ? "" : prompt.template);
   const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
   const [connectionMessage, setConnectionMessage] = useState<string>("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const hasSentInitialMessage = useRef(false);
+  const hasSentFirstSessionMessage = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,20 +46,34 @@ export function ChatPanel({ prompt, onBack, initialMessage }: ChatPanelProps) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const sendWithPreamble = useCallback(
+    (text: string) => {
+      const isFirstSessionMessage = !hasSentFirstSessionMessage.current;
+      hasSentFirstSessionMessage.current = true;
+      if (isFirstSessionMessage && messagePreamble) {
+        return sendMessage(text, {
+          hiddenPrefix: `${messagePreamble}\n\nTeacher's request: `,
+        });
+      }
+      return sendMessage(text);
+    },
+    [messagePreamble, sendMessage],
+  );
+
   useEffect(() => {
     if (connectionState !== "ok" || hasSentInitialMessage.current) return;
     const message = initialMessage?.trim();
     if (!message) return;
     hasSentInitialMessage.current = true;
-    void sendMessage(message);
-  }, [connectionState, initialMessage, sendMessage]);
+    void sendWithPreamble(message);
+  }, [connectionState, initialMessage, sendWithPreamble]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (connectionState !== "ok") return;
     const text = draft;
     setDraft("");
-    await sendMessage(text);
+    await sendWithPreamble(text);
   }
 
   return (
@@ -98,7 +114,11 @@ export function ChatPanel({ prompt, onBack, initialMessage }: ChatPanelProps) {
           value={draft}
           onChange={(e) => setDraft(e.currentTarget.value)}
           rows={4}
-          placeholder="Edit the prompt or type your own message…"
+          placeholder={
+            prompt.template.trim().length > 0
+              ? "Edit the prompt or type your own message…"
+              : "Describe what you need help with…"
+          }
           disabled={connectionState !== "ok" || isSending}
         />
         <Button type="submit" disabled={connectionState !== "ok" || isSending || !draft.trim()}>
