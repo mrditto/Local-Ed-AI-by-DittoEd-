@@ -262,6 +262,12 @@ body {
   gap: 6px;
   margin-bottom: 16px;
 }
+.settings-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 .settings-field label {
   font-size: 0.85rem;
   font-weight: 600;

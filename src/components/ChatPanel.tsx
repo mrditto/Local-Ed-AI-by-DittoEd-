@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useChat } from "../hooks/useChat";
-import { checkConnection } from "../api/anythingllm";
+import { checkConnection } from "../api/ollama";
 import { DisclaimerFooter } from "./DisclaimerFooter";
 import { VerifyFooter } from "./VerifyFooter";
 import { Button } from "./ui/Button";
@@ -85,7 +85,7 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
         <h2>{prompt.title}</h2>
       </header>
 
-      {connectionState === "checking" && <Spinner label="Checking AnythingLLM connection…" />}
+      {connectionState === "checking" && <Spinner label="Checking Ollama connection…" />}
 
       {connectionState === "error" && (
         <div className="connection-banner connection-banner-error">{connectionMessage}</div>

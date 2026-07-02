@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { sendChatMessage, type AnythingLLMErrorKind } from "../api/anythingllm";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { sendChat, type ChatRequestMessage, type OllamaErrorKind } from "../api/ollama";
 
 export interface ChatMessage {
   id: string;
@@ -17,11 +17,13 @@ function newId(): string {
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  // One AnythingLLM thread per chat session — keeps context small and
-  // prevents history bleeding between prompts/sessions.
-  const sessionIdRef = useRef(`edu-${newId()}`);
   const [isSending, setIsSending] = useState(false);
-  const [lastErrorKind, setLastErrorKind] = useState<AnythingLLMErrorKind | null>(null);
+  const [lastErrorKind, setLastErrorKind] = useState<OllamaErrorKind | null>(null);
+  const historyRef = useRef<ChatMessage[]>([]);
+
+  useEffect(() => {
+    historyRef.current = messages;
+  }, [messages]);
 
   const sendMessage = useCallback(async (text: string, options?: SendMessageOptions) => {
     const trimmed = text.trim();
@@ -32,10 +34,18 @@ export function useChat() {
     setIsSending(true);
 
     const outgoingText = options?.hiddenPrefix ? `${options.hiddenPrefix}${trimmed}` : trimmed;
-    const result = await sendChatMessage(outgoingText, sessionIdRef.current);
+    const conversation: ChatRequestMessage[] = historyRef.current
+      .filter((message) => message.role !== "error")
+      .map((message) => ({
+        role: message.role === "assistant" ? "assistant" : "user",
+        content: message.text,
+      }));
+    conversation.push({ role: "user", content: outgoingText });
+
+    const result = await sendChat(conversation);
 
     if (result.ok) {
-      setMessages((prev) => [...prev, { id: newId(), role: "assistant", text: result.text }]);
+      setMessages((prev) => [...prev, { id: newId(), role: "assistant", text: result.value }]);
     } else {
       setLastErrorKind(result.error);
       setMessages((prev) => [...prev, { id: newId(), role: "error", text: result.message }]);
@@ -47,7 +57,7 @@ export function useChat() {
   const reset = useCallback(() => {
     setMessages([]);
     setLastErrorKind(null);
-    sessionIdRef.current = `edu-${newId()}`;
+    historyRef.current = [];
   }, []);
 
   return { messages, isSending, lastErrorKind, sendMessage, reset };
