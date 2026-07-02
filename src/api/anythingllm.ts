@@ -19,7 +19,7 @@ export type AnythingLLMErrorKind =
   | "unknown";
 
 const NOT_CONFIGURED_MESSAGE =
-  "Ditto Ed isn't set up yet — open Settings and add your AnythingLLM API key and workspace.";
+  "DittoEd isn't set up yet — open Settings and add your AnythingLLM API key and workspace.";
 
 function buildHeaders(apiKey: string): HeadersInit {
   return {
