@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { useChat } from "../hooks/useChat";
 import { checkConnection } from "../api/anythingllm";
 import { DisclaimerFooter } from "./DisclaimerFooter";
@@ -66,7 +67,13 @@ export function ChatPanel({ prompt, onBack }: ChatPanelProps) {
       <div className="chat-messages">
         {messages.map((msg) => (
           <div key={msg.id} className={`chat-message chat-message-${msg.role}`}>
-            <p>{msg.text}</p>
+            {msg.role === "assistant" ? (
+              <div className="chat-message-markdown">
+                <ReactMarkdown>{msg.text}</ReactMarkdown>
+              </div>
+            ) : (
+              <p>{msg.text}</p>
+            )}
             {msg.role === "assistant" && <DisclaimerFooter />}
           </div>
         ))}

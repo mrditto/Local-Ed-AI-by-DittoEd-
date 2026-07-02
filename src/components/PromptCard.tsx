@@ -1,14 +1,6 @@
 import { Card } from "./ui/Card";
 import type { Prompt } from "../prompts";
-
-const CATEGORY_LABEL: Record<Prompt["category"], string> = {
-  planning: "Planning",
-  assessment: "Assessment",
-  feedback: "Feedback",
-  communication: "Communication",
-  engagement: "Engagement",
-  differentiation: "Differentiation",
-};
+import { CATEGORY_LABEL } from "../prompts/categoryLabels";
 
 interface PromptCardProps {
   prompt: Prompt;
