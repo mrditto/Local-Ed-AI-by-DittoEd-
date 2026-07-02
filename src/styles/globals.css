@@ -32,6 +32,13 @@ body {
 .prompt-library-header h1 {
   margin: 0 0 4px;
 }
+.prompt-library-maker {
+  margin: 0 0 8px;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .prompt-library-header p {
   color: var(--color-text-muted);
   margin: 0 0 24px;

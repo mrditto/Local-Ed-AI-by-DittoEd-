@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { sendChat, type ChatRequestMessage, type OllamaErrorKind } from "../api/ollama";
 
 export interface ChatMessage {
@@ -19,11 +19,7 @@ export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [lastErrorKind, setLastErrorKind] = useState<OllamaErrorKind | null>(null);
-  const historyRef = useRef<ChatMessage[]>([]);
-
-  useEffect(() => {
-    historyRef.current = messages;
-  }, [messages]);
+  const outgoingHistoryRef = useRef<ChatRequestMessage[]>([]);
 
   const sendMessage = useCallback(async (text: string, options?: SendMessageOptions) => {
     const trimmed = text.trim();
@@ -34,17 +30,19 @@ export function useChat() {
     setIsSending(true);
 
     const outgoingText = options?.hiddenPrefix ? `${options.hiddenPrefix}${trimmed}` : trimmed;
-    const conversation: ChatRequestMessage[] = historyRef.current
-      .filter((message) => message.role !== "error")
-      .map((message) => ({
-        role: message.role === "assistant" ? "assistant" : "user",
-        content: message.text,
-      }));
-    conversation.push({ role: "user", content: outgoingText });
+    const conversation: ChatRequestMessage[] = [
+      ...outgoingHistoryRef.current,
+      { role: "user", content: outgoingText },
+    ];
 
     const result = await sendChat(conversation);
+    outgoingHistoryRef.current = conversation;
 
     if (result.ok) {
+      outgoingHistoryRef.current = [
+        ...outgoingHistoryRef.current,
+        { role: "assistant", content: result.value },
+      ];
       setMessages((prev) => [...prev, { id: newId(), role: "assistant", text: result.value }]);
     } else {
       setLastErrorKind(result.error);
@@ -57,7 +55,7 @@ export function useChat() {
   const reset = useCallback(() => {
     setMessages([]);
     setLastErrorKind(null);
-    historyRef.current = [];
+    outgoingHistoryRef.current = [];
   }, []);
 
   return { messages, isSending, lastErrorKind, sendMessage, reset };

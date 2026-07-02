@@ -1,4 +1,4 @@
-# DittoEd (formerly EducatorLLM)
+# Local Ed AI by DittoEd
 
 Echoing the educator, not replacing the magic.
 

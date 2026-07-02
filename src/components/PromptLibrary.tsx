@@ -30,7 +30,8 @@ export function PromptLibrary({ onSelectPrompt, onAskAssistant }: PromptLibraryP
   return (
     <div className="prompt-library">
       <header className="prompt-library-header">
-        <h1>DittoEd</h1>
+        <h1>Local Ed AI</h1>
+        <div className="prompt-library-maker">by DittoEd</div>
         <p>
           <span className="prompt-library-tagline">
             Echoing the educator, not replacing the magic.
