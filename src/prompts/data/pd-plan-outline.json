@@ -1,0 +1,30 @@
+{
+  "id": "pd-plan-outline",
+  "title": "PD Plan Outline",
+  "description": "Outline a professional development plan with implementation follow-through.",
+  "category": "admin",
+  "template": "Outline a professional development plan on {pdTopic} for {audience} totaling {totalHours}. Include learning objectives, session breakdowns, and a follow-up implementation check plan to support transfer into practice.",
+  "fields": [
+    {
+      "id": "pdTopic",
+      "label": "PD topic",
+      "type": "text",
+      "placeholder": "e.g., formative assessment strategies",
+      "required": true
+    },
+    {
+      "id": "audience",
+      "label": "Audience",
+      "type": "text",
+      "placeholder": "e.g., K-5 instructional staff",
+      "required": true
+    },
+    {
+      "id": "totalHours",
+      "label": "Total hours",
+      "type": "text",
+      "placeholder": "e.g., 6 hours",
+      "required": true
+    }
+  ]
+}

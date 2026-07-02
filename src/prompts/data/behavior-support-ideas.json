@@ -1,0 +1,30 @@
+{
+  "id": "behavior-support-ideas",
+  "title": "Behavior Support Ideas",
+  "description": "Draft positive support strategies and data ideas from observed patterns.",
+  "category": "sped",
+  "template": "Based on this observed behavior pattern: {observedBehaviorPattern}, in this setting: {setting}, and suspected function (if known): {suspectedFunction}, provide 4-5 positive behavior support strategies and practical data-collection ideas. This is not a formal BIP or FBA. Never use a real student's name — write [Student] instead. This is a draft that requires review and approval by the full IEP team; do not make eligibility, placement, or disciplinary determinations.",
+  "fields": [
+    {
+      "id": "observedBehaviorPattern",
+      "label": "Observed behavior pattern",
+      "type": "textarea",
+      "placeholder": "Describe patterns and triggers (no student names or identifying details).",
+      "required": true
+    },
+    {
+      "id": "setting",
+      "label": "Setting",
+      "type": "text",
+      "placeholder": "e.g., transitions between classes",
+      "required": true
+    },
+    {
+      "id": "suspectedFunction",
+      "label": "Suspected function (if known)",
+      "type": "text",
+      "placeholder": "e.g., escape from difficult tasks",
+      "required": false
+    }
+  ]
+}

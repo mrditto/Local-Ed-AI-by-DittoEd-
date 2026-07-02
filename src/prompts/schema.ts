@@ -28,7 +28,9 @@ export type PromptCategory =
   | "feedback"
   | "communication"
   | "engagement"
-  | "differentiation";
+  | "differentiation"
+  | "sped"
+  | "admin";
 
 function isValidPromptField(value: unknown): value is PromptField {
   if (typeof value !== "object" || value === null) return false;

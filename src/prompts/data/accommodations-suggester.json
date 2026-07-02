@@ -1,0 +1,30 @@
+{
+  "id": "accommodations-suggester",
+  "title": "Accommodations Suggester",
+  "description": "Generate practical accommodation ideas for IEP-team consideration.",
+  "category": "sped",
+  "template": "Suggest 6-8 accommodation ideas for a student with this area of need: {areaOfNeed}, in this setting: {setting}, at {gradeLevel}. Group ideas by presentation, response, setting, and timing, and phrase each as a suggestion for IEP-team consideration. Never use a real student's name — write [Student] instead. This is a draft that requires review and approval by the full IEP team; do not make eligibility, placement, or disciplinary determinations.",
+  "fields": [
+    {
+      "id": "areaOfNeed",
+      "label": "Area of need",
+      "type": "text",
+      "placeholder": "e.g., written expression",
+      "required": true
+    },
+    {
+      "id": "setting",
+      "label": "Setting",
+      "type": "text",
+      "placeholder": "e.g., general education classroom",
+      "required": true
+    },
+    {
+      "id": "gradeLevel",
+      "label": "Grade level",
+      "type": "text",
+      "placeholder": "e.g., Grade 7",
+      "required": true
+    }
+  ]
+}

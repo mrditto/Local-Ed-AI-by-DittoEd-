@@ -1,0 +1,30 @@
+{
+  "id": "staff-email-composer",
+  "title": "Staff Email Composer",
+  "description": "Draft a professional internal email to school staff.",
+  "category": "admin",
+  "template": "Draft a professional email to {audience} using this tone: {tone}. Cover these key points: {keyPoints}. Keep it clear, concise, and ready to send after review.",
+  "fields": [
+    {
+      "id": "audience",
+      "label": "Audience",
+      "type": "text",
+      "placeholder": "e.g., grade-level team",
+      "required": true
+    },
+    {
+      "id": "keyPoints",
+      "label": "Key points",
+      "type": "textarea",
+      "placeholder": "List the important points to include.",
+      "required": true
+    },
+    {
+      "id": "tone",
+      "label": "Tone",
+      "type": "text",
+      "placeholder": "e.g., collaborative and direct",
+      "required": true
+    }
+  ]
+}

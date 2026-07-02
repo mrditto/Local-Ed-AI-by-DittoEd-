@@ -6,17 +6,19 @@ interface PromptLibraryProps {
   onSelectPrompt: (prompt: Prompt) => void;
 }
 
-export function PromptLibrary({ onSelectPrompt }: PromptLibraryProps) {
-  const categoryOrder: PromptCategory[] = [
-    "planning",
-    "assessment",
-    "feedback",
-    "communication",
-    "differentiation",
-    "engagement",
-  ];
+const CATEGORY_ORDER: PromptCategory[] = [
+  "planning",
+  "assessment",
+  "feedback",
+  "communication",
+  "differentiation",
+  "engagement",
+  "sped",
+  "admin",
+];
 
-  const sections = categoryOrder
+export function PromptLibrary({ onSelectPrompt }: PromptLibraryProps) {
+  const sections = CATEGORY_ORDER
     .map((category) => ({
       category,
       prompts: prompts.filter((prompt) => prompt.category === category),

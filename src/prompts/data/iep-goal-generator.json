@@ -1,0 +1,37 @@
+{
+  "id": "iep-goal-generator",
+  "title": "IEP Goal Generator",
+  "description": "Draft measurable SMART IEP goal options from baseline data.",
+  "category": "sped",
+  "template": "Create 2-3 measurable SMART IEP goal drafts for {gradeLevel} in {skillArea} over {targetTimeframe}, using this current baseline information: {currentBaseline}. Each goal should clearly include condition, behavior, and criterion, and be practical for progress monitoring. Never use a real student's name — write [Student] instead. This is a draft that requires review and approval by the full IEP team; do not make eligibility, placement, or disciplinary determinations.",
+  "fields": [
+    {
+      "id": "skillArea",
+      "label": "Skill area",
+      "type": "text",
+      "placeholder": "e.g., reading comprehension",
+      "required": true
+    },
+    {
+      "id": "currentBaseline",
+      "label": "Current baseline",
+      "type": "textarea",
+      "placeholder": "Describe current performance (no student names or identifying details).",
+      "required": true
+    },
+    {
+      "id": "targetTimeframe",
+      "label": "Target timeframe",
+      "type": "text",
+      "placeholder": "e.g., by annual review in 36 instructional weeks",
+      "required": true
+    },
+    {
+      "id": "gradeLevel",
+      "label": "Grade level",
+      "type": "text",
+      "placeholder": "e.g., Grade 4",
+      "required": true
+    }
+  ]
+}

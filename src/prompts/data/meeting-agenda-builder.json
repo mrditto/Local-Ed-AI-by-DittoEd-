@@ -1,0 +1,30 @@
+{
+  "id": "meeting-agenda-builder",
+  "title": "Meeting Agenda Builder",
+  "description": "Create a timed agenda with clear item durations and flow.",
+  "category": "admin",
+  "template": "Create a timed agenda for a {meetingType} meeting lasting {duration}. Use these topics: {topics}. Assign minutes per item so the total fits the meeting duration, and include a short purpose statement for each agenda item.",
+  "fields": [
+    {
+      "id": "meetingType",
+      "label": "Meeting type",
+      "type": "text",
+      "placeholder": "e.g., department meeting",
+      "required": true
+    },
+    {
+      "id": "duration",
+      "label": "Duration",
+      "type": "text",
+      "placeholder": "e.g., 45 minutes",
+      "required": true
+    },
+    {
+      "id": "topics",
+      "label": "Topics",
+      "type": "textarea",
+      "placeholder": "List meeting topics in priority order.",
+      "required": true
+    }
+  ]
+}

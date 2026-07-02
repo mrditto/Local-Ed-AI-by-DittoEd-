@@ -1,0 +1,30 @@
+{
+  "id": "present-levels-drafter",
+  "title": "Present Levels Drafter",
+  "description": "Turn raw notes into a neutral PLAAFP-style summary paragraph.",
+  "category": "sped",
+  "template": "Using the notes below, draft one neutral PLAAFP-style paragraph for {area}. Teacher observations: {teacherObservations}. Assessment data summary: {assessmentDataSummary}. State strengths, needs, and impact on access to the general curriculum, and do not infer anything that is not explicitly stated in the input. Never use a real student's name — write [Student] instead. This is a draft that requires review and approval by the full IEP team; do not make eligibility, placement, or disciplinary determinations.",
+  "fields": [
+    {
+      "id": "area",
+      "label": "Area (academic or functional)",
+      "type": "text",
+      "placeholder": "e.g., academic",
+      "required": true
+    },
+    {
+      "id": "teacherObservations",
+      "label": "Teacher observations",
+      "type": "textarea",
+      "placeholder": "Paste observation notes (no student names or identifying details).",
+      "required": true
+    },
+    {
+      "id": "assessmentDataSummary",
+      "label": "Assessment data summary",
+      "type": "textarea",
+      "placeholder": "Summarize assessment data (no student names or identifying details).",
+      "required": true
+    }
+  ]
+}
