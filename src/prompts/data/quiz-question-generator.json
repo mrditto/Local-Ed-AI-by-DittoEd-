@@ -3,5 +3,35 @@
   "title": "Quiz Question Generator",
   "description": "Generate a mixed set of quiz questions for a topic, with an answer key.",
   "category": "assessment",
-  "template": "Help me write quiz questions. Ask for the subject, grade level, topic, and number of questions if I haven't said them yet. Then follow these rules exactly: 1) Write exactly the requested number of questions — count them before answering. 2) Number them 1, 2, 3, and so on. 3) Mix multiple-choice and short-answer. 4) Do NOT put any answers next to the questions. 5) After the last question, write the heading 'Answer Key' and list every answer by question number."
+  "template": "Help me write quiz questions for {subject}, {gradeLevel}, on {topic}. Write {questionCount} questions. Then follow these rules exactly: 1) Write exactly the requested number of questions — count them before answering. 2) Number them 1, 2, 3, and so on. 3) Mix multiple-choice and short-answer. 4) Do NOT put any answers next to the questions. 5) After the last question, write the heading 'Answer Key' and list every answer by question number.",
+  "fields": [
+    {
+      "id": "subject",
+      "label": "Subject",
+      "type": "text",
+      "placeholder": "e.g., Math",
+      "required": true
+    },
+    {
+      "id": "gradeLevel",
+      "label": "Grade level",
+      "type": "text",
+      "placeholder": "e.g., Grade 8",
+      "required": true
+    },
+    {
+      "id": "topic",
+      "label": "Topic",
+      "type": "text",
+      "placeholder": "e.g., Linear equations",
+      "required": true
+    },
+    {
+      "id": "questionCount",
+      "label": "Number of questions",
+      "type": "text",
+      "placeholder": "e.g., 10",
+      "required": true
+    }
+  ]
 }

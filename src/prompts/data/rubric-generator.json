@@ -3,5 +3,28 @@
   "title": "Rubric Generator",
   "description": "Build a scoring rubric for an assignment with clear criteria and performance levels.",
   "category": "assessment",
-  "template": "Help me build a grading rubric. Ask me for the assignment type, grade level, and the 3-5 things I most want to assess if I haven't said them yet. Then produce a rubric table with those criteria as rows and 4 performance levels as columns (e.g., Exemplary / Proficient / Developing / Beginning), with a short description in each cell."
+  "template": "Help me build a grading rubric for a {assignmentType} assignment at {gradeLevel}. Use the following criteria: {criteria}. Then produce a rubric table with those criteria as rows and 4 performance levels as columns (e.g., Exemplary / Proficient / Developing / Beginning), with a short description in each cell.",
+  "fields": [
+    {
+      "id": "assignmentType",
+      "label": "Assignment type",
+      "type": "text",
+      "placeholder": "e.g., persuasive essay",
+      "required": true
+    },
+    {
+      "id": "gradeLevel",
+      "label": "Grade level",
+      "type": "text",
+      "placeholder": "e.g., Grade 10",
+      "required": true
+    },
+    {
+      "id": "criteria",
+      "label": "Criteria (3-5 items)",
+      "type": "textarea",
+      "placeholder": "e.g., Claim clarity, Evidence quality, Organization, Grammar",
+      "required": true
+    }
+  ]
 }

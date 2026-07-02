@@ -3,5 +3,21 @@
   "title": "Text Leveler",
   "description": "Rewrite any passage at a different reading level, with key vocabulary.",
   "category": "differentiation",
-  "template": "I'll paste a text passage. Ask me for the target grade or reading level if I haven't given it. Rewrite the passage at that level, keeping all key facts and the original meaning — do not add information that isn't in the original. After the rewrite, list 5 key vocabulary words from the passage with student-friendly definitions. Do not include any student names or identifying details."
+  "template": "Rewrite the following passage for {targetGradeLevel}: {passage}. Keep all key facts and the original meaning — do not add information that isn't in the original. After the rewrite, list 5 key vocabulary words from the passage with student-friendly definitions. Do not include any student names or identifying details.",
+  "fields": [
+    {
+      "id": "targetGradeLevel",
+      "label": "Target grade level",
+      "type": "text",
+      "placeholder": "e.g., Grade 5",
+      "required": true
+    },
+    {
+      "id": "passage",
+      "label": "Passage",
+      "type": "textarea",
+      "placeholder": "Paste the passage to level here.",
+      "required": true
+    }
+  ]
 }

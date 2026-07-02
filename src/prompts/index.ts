@@ -33,4 +33,4 @@ export function getPromptById(id: string): Prompt | undefined {
   return prompts.find((p) => p.id === id);
 }
 
-export type { Prompt, PromptCategory } from "./schema";
+export type { Prompt, PromptCategory, PromptField } from "./schema";
