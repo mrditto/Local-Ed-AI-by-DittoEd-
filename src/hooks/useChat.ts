@@ -7,6 +7,10 @@ export interface ChatMessage {
   text: string;
 }
 
+interface SendMessageOptions {
+  hiddenPrefix?: string;
+}
+
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -19,7 +23,7 @@ export function useChat() {
   const [isSending, setIsSending] = useState(false);
   const [lastErrorKind, setLastErrorKind] = useState<AnythingLLMErrorKind | null>(null);
 
-  const sendMessage = useCallback(async (text: string) => {
+  const sendMessage = useCallback(async (text: string, options?: SendMessageOptions) => {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
 
@@ -27,7 +31,8 @@ export function useChat() {
     setMessages((prev) => [...prev, { id: newId(), role: "user", text: trimmed }]);
     setIsSending(true);
 
-    const result = await sendChatMessage(trimmed, sessionIdRef.current);
+    const outgoingText = options?.hiddenPrefix ? `${options.hiddenPrefix}${trimmed}` : trimmed;
+    const result = await sendChatMessage(outgoingText, sessionIdRef.current);
 
     if (result.ok) {
       setMessages((prev) => [...prev, { id: newId(), role: "assistant", text: result.text }]);
