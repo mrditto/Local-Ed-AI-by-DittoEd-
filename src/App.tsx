@@ -3,12 +3,13 @@ import { PromptLibrary } from "./components/PromptLibrary";
 import { ChatPanel } from "./components/ChatPanel";
 import { PromptWizard } from "./components/PromptWizard";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { PersonalizePanel } from "./components/PersonalizePanel";
 import { isConfigured } from "./config/anythingllm.config";
 import { Button } from "./components/ui/Button";
 import { prompts, type Prompt } from "./prompts";
 import { buildAssistantPreamble } from "./prompts/assistantPreamble";
 
-type View = "library" | "wizard" | "chat" | "assistant" | "settings";
+type View = "library" | "wizard" | "chat" | "assistant" | "settings" | "personalize";
 
 const ASSISTANT_PROMPT: Prompt = {
   id: "ask-dittoed",
@@ -50,8 +51,11 @@ function App() {
 
   return (
     <main className="app-shell">
-      {view !== "settings" && (
+      {view !== "settings" && view !== "personalize" && (
         <div className="app-toolbar">
+          <Button variant="ghost" onClick={() => setView("personalize")}>
+            Personalize
+          </Button>
           <Button variant="ghost" onClick={() => setView("settings")}>
             ⚙ Settings
           </Button>
@@ -59,6 +63,7 @@ function App() {
       )}
 
       {view === "settings" && <SettingsPanel onDone={backToLibrary} />}
+      {view === "personalize" && <PersonalizePanel onDone={backToLibrary} />}
       {view === "wizard" && activePrompt && (
         <PromptWizard prompt={activePrompt} onBack={backToLibrary} onGenerate={openChatFromWizard} />
       )}
