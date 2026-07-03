@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "./ui/Button";
 import type { Prompt, PromptField } from "../prompts";
 import { VerifyFooter } from "./VerifyFooter";
+import { extractTextFromFile } from "../utils/extractText";
 
 interface PromptWizardProps {
   prompt: Prompt;
@@ -52,6 +53,10 @@ const REFERRAL_KEYWORDS = [
 export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) {
   const fields = prompt.fields ?? [];
   const [values, setValues] = useState<Record<string, string>>(() => buildInitialValues(fields));
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [fieldStatuses, setFieldStatuses] = useState<Record<string, string>>({});
+  const [activeAttachmentFieldId, setActiveAttachmentFieldId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canGenerate = fields.every(
     (field) => !field.required || (values[field.id] ?? "").trim().length > 0,
@@ -76,6 +81,44 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
     onGenerate(composeMessage(prompt, fields, values));
   }
 
+  function handleAttachClick(fieldId: string) {
+    setActiveAttachmentFieldId(fieldId);
+    fileInputRef.current?.click();
+  }
+
+  async function handleAttachmentPicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.currentTarget.files?.[0];
+    e.currentTarget.value = "";
+    if (!file || !activeAttachmentFieldId) return;
+
+    const result = await extractTextFromFile(file);
+    if (!result.ok) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        [activeAttachmentFieldId]: result.message,
+      }));
+      setFieldStatuses((prev) => ({
+        ...prev,
+        [activeAttachmentFieldId]: "",
+      }));
+      setActiveAttachmentFieldId(null);
+      return;
+    }
+
+    updateField(activeAttachmentFieldId, result.text);
+    setFieldErrors((prev) => ({
+      ...prev,
+      [activeAttachmentFieldId]: "",
+    }));
+    setFieldStatuses((prev) => ({
+      ...prev,
+      [activeAttachmentFieldId]: result.truncated
+        ? `Loaded ${file.name} (shortened to fit).`
+        : `Loaded ${file.name}.`,
+    }));
+    setActiveAttachmentFieldId(null);
+  }
+
   return (
     <div className="wizard-panel">
       <header className="wizard-header">
@@ -86,6 +129,13 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
       </header>
 
       <form className="wizard-form" onSubmit={handleSubmit}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.docx,.txt,.md"
+          className="visually-hidden"
+          onChange={handleAttachmentPicked}
+        />
         {fields.map((field) => (
           <div key={field.id} className="settings-field">
             <label htmlFor={`wizard-${field.id}`}>
@@ -101,6 +151,21 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
                 placeholder={field.placeholder}
                 rows={6}
               />
+            )}
+
+            {field.type === "textarea" && (
+              <div className="field-attachment-controls">
+                <Button type="button" variant="secondary" onClick={() => handleAttachClick(field.id)}>
+                  Attach file
+                </Button>
+                <div className="attachment-hint">
+                  Google Doc? Use File → Download → Microsoft Word (.docx), then attach it here.
+                </div>
+                {fieldStatuses[field.id] && (
+                  <div className="attachment-status">{fieldStatuses[field.id]}</div>
+                )}
+                {fieldErrors[field.id] && <div className="attachment-error">{fieldErrors[field.id]}</div>}
+              </div>
             )}
 
             {field.type === "text" && (

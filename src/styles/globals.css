@@ -218,14 +218,68 @@ body {
   padding-top: 12px;
   border-top: 1px solid var(--color-border);
 }
-.chat-input-row textarea {
+.chat-input-main {
   flex: 1;
+}
+.chat-input-row textarea {
+  width: 100%;
   resize: vertical;
   padding: 10px;
   border-radius: 8px;
   border: 1px solid var(--color-border);
   font-family: inherit;
   font-size: 0.95rem;
+}
+.chat-input-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+}
+.attachment-chip-remove {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0;
+}
+.attachment-hint {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+}
+.attachment-status {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: var(--color-primary-hover);
+}
+.attachment-error {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: var(--color-error-text);
 }
 
 .connection-banner {
@@ -383,6 +437,9 @@ body {
 .wizard-actions {
   display: flex;
   justify-content: flex-end;
+  margin-top: 8px;
+}
+.field-attachment-controls {
   margin-top: 8px;
 }
 .wizard-warning-banner {

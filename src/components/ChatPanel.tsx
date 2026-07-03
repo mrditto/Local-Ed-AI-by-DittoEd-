@@ -7,6 +7,7 @@ import { VerifyFooter } from "./VerifyFooter";
 import { Button } from "./ui/Button";
 import { Spinner } from "./ui/Spinner";
 import type { Prompt } from "../prompts";
+import { extractTextFromFile } from "../utils/extractText";
 
 interface ChatPanelProps {
   prompt: Prompt;
@@ -17,11 +18,20 @@ interface ChatPanelProps {
 
 type ConnectionState = "checking" | "ok" | "error";
 
+interface PendingAttachment {
+  fileName: string;
+  text: string;
+  truncated: boolean;
+}
+
 export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: ChatPanelProps) {
   const { messages, isSending, sendMessage } = useChat();
   const [draft, setDraft] = useState(initialMessage ? "" : prompt.template);
   const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
   const [connectionMessage, setConnectionMessage] = useState<string>("");
+  const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
+  const [attachmentError, setAttachmentError] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const hasSentInitialMessage = useRef(false);
   const hasSentFirstSessionMessage = useRef(false);
@@ -47,13 +57,19 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
   }, [messages]);
 
   const sendWithPreamble = useCallback(
-    (text: string) => {
+    (text: string, attachmentPrefix?: string) => {
       const isFirstSessionMessage = !hasSentFirstSessionMessage.current;
       hasSentFirstSessionMessage.current = true;
+      const hiddenPrefixParts: string[] = [];
       if (isFirstSessionMessage && messagePreamble) {
-        return sendMessage(text, {
-          hiddenPrefix: `${messagePreamble}\n\nTeacher's request: `,
-        });
+        hiddenPrefixParts.push(`${messagePreamble}\n\nTeacher's request: `);
+      }
+      if (attachmentPrefix) {
+        hiddenPrefixParts.push(attachmentPrefix);
+      }
+      const hiddenPrefix = hiddenPrefixParts.join("");
+      if (hiddenPrefix.length > 0) {
+        return sendMessage(text, { hiddenPrefix });
       }
       return sendMessage(text);
     },
@@ -72,8 +88,38 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
     e.preventDefault();
     if (connectionState !== "ok") return;
     const text = draft;
+    const attachmentPrefix = attachment
+      ? `Attached document "${attachment.fileName}":\n---\n${attachment.text}\n---\n\n`
+      : undefined;
     setDraft("");
-    await sendWithPreamble(text);
+    await sendWithPreamble(text, attachmentPrefix);
+    setAttachment(null);
+    setAttachmentError("");
+  }
+
+  function handleAttachClick() {
+    setAttachmentError("");
+    fileInputRef.current?.click();
+  }
+
+  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.currentTarget.files?.[0];
+    e.currentTarget.value = "";
+    if (!file) return;
+
+    const result = await extractTextFromFile(file);
+    if (!result.ok) {
+      setAttachment(null);
+      setAttachmentError(result.message);
+      return;
+    }
+
+    setAttachment({
+      fileName: file.name,
+      text: result.text,
+      truncated: result.truncated,
+    });
+    setAttachmentError("");
   }
 
   return (
@@ -110,20 +156,61 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
       </div>
 
       <form className="chat-input-row" onSubmit={handleSubmit}>
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.currentTarget.value)}
-          rows={4}
-          placeholder={
-            prompt.template.trim().length > 0
-              ? "Edit the prompt or type your own message…"
-              : "Describe what you need help with…"
-          }
-          disabled={connectionState !== "ok" || isSending}
-        />
-        <Button type="submit" disabled={connectionState !== "ok" || isSending || !draft.trim()}>
-          Send
-        </Button>
+        <div className="chat-input-main">
+          {attachment && (
+            <div className="attachment-chip">
+              <span>
+                {attachment.fileName}
+                {attachment.truncated ? " (shortened to fit)" : ""}
+              </span>
+              <button
+                type="button"
+                className="attachment-chip-remove"
+                onClick={() => setAttachment(null)}
+                aria-label="Remove attached file"
+                disabled={connectionState !== "ok" || isSending}
+              >
+                ×
+              </button>
+            </div>
+          )}
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.currentTarget.value)}
+            rows={4}
+            placeholder={
+              prompt.template.trim().length > 0
+                ? "Edit the prompt or type your own message…"
+                : "Describe what you need help with…"
+            }
+            disabled={connectionState !== "ok" || isSending}
+          />
+          <div className="attachment-hint">
+            Google Doc? Use File → Download → Microsoft Word (.docx), then attach it here.
+          </div>
+          {attachmentError && <div className="attachment-error">{attachmentError}</div>}
+        </div>
+        <div className="chat-input-actions">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,.txt,.md"
+            className="visually-hidden"
+            onChange={handleFilePick}
+            disabled={connectionState !== "ok" || isSending}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleAttachClick}
+            disabled={connectionState !== "ok" || isSending}
+          >
+            📎 Attach
+          </Button>
+          <Button type="submit" disabled={connectionState !== "ok" || isSending || !draft.trim()}>
+            Send
+          </Button>
+        </div>
       </form>
     </div>
   );
