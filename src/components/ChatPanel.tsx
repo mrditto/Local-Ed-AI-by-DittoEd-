@@ -8,6 +8,13 @@ import { Button } from "./ui/Button";
 import { Spinner } from "./ui/Spinner";
 import type { Prompt } from "../prompts";
 import { extractTextFromFile } from "../utils/extractText";
+import {
+  buildPersonalizationPreamble,
+  lengthInstruction,
+  loadPersonalization,
+  toneInstruction,
+  type Personalization,
+} from "../config/personalization";
 
 interface ChatPanelProps {
   prompt: Prompt;
@@ -26,7 +33,10 @@ interface PendingAttachment {
 
 export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: ChatPanelProps) {
   const { messages, isSending, sendMessage } = useChat();
+  const [personalization] = useState(() => loadPersonalization());
   const [draft, setDraft] = useState(initialMessage ? "" : prompt.template);
+  const [tone, setTone] = useState<Personalization["tone"]>(personalization.tone);
+  const [length, setLength] = useState<Personalization["length"]>(personalization.length);
   const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
   const [connectionMessage, setConnectionMessage] = useState<string>("");
   const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
@@ -35,6 +45,8 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
   const bottomRef = useRef<HTMLDivElement>(null);
   const hasSentInitialMessage = useRef(false);
   const hasSentFirstSessionMessage = useRef(false);
+  const lastAppliedTone = useRef<Personalization["tone"] | null>(null);
+  const lastAppliedLength = useRef<Personalization["length"] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,8 +73,32 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
       const isFirstSessionMessage = !hasSentFirstSessionMessage.current;
       hasSentFirstSessionMessage.current = true;
       const hiddenPrefixParts: string[] = [];
-      if (isFirstSessionMessage && messagePreamble) {
-        hiddenPrefixParts.push(`${messagePreamble}\n\nTeacher's request: `);
+      if (isFirstSessionMessage) {
+        const personalizationPreamble = buildPersonalizationPreamble(personalization, {
+          tone,
+          length,
+        });
+        if (messagePreamble) {
+          hiddenPrefixParts.push(`${messagePreamble}\n\n`);
+        }
+        if (personalizationPreamble) {
+          hiddenPrefixParts.push(`${personalizationPreamble}\n\n`);
+        }
+        if (messagePreamble || personalizationPreamble) {
+          hiddenPrefixParts.push("Teacher's request: ");
+        }
+        lastAppliedTone.current = tone;
+        lastAppliedLength.current = length;
+      } else {
+        const toneChanged = lastAppliedTone.current !== tone;
+        const lengthChanged = lastAppliedLength.current !== length;
+        if (toneChanged || lengthChanged) {
+          hiddenPrefixParts.push(
+            `(From now on: ${toneInstruction(tone)} ${lengthInstruction(length)}) `,
+          );
+          lastAppliedTone.current = tone;
+          lastAppliedLength.current = length;
+        }
       }
       if (attachmentPrefix) {
         hiddenPrefixParts.push(attachmentPrefix);
@@ -73,7 +109,7 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
       }
       return sendMessage(text);
     },
-    [messagePreamble, sendMessage],
+    [length, messagePreamble, personalization, sendMessage, tone],
   );
 
   useEffect(() => {
@@ -153,6 +189,35 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
         ))}
         {isSending && <Spinner label="Thinking…" />}
         <div ref={bottomRef} />
+      </div>
+
+      <div className="chat-personalization-row">
+        <div className="settings-field chat-personalization-field">
+          <label htmlFor="chat-tone">Tone</label>
+          <select
+            id="chat-tone"
+            value={tone}
+            onChange={(e) => setTone(e.currentTarget.value as Personalization["tone"])}
+            disabled={connectionState !== "ok" || isSending}
+          >
+            <option value="professional">Professional</option>
+            <option value="friendly">Friendly</option>
+            <option value="casual">Casual</option>
+          </select>
+        </div>
+        <div className="settings-field chat-personalization-field">
+          <label htmlFor="chat-length">Length</label>
+          <select
+            id="chat-length"
+            value={length}
+            onChange={(e) => setLength(e.currentTarget.value as Personalization["length"])}
+            disabled={connectionState !== "ok" || isSending}
+          >
+            <option value="short">Short</option>
+            <option value="standard">Standard</option>
+            <option value="detailed">Detailed</option>
+          </select>
+        </div>
       </div>
 
       <form className="chat-input-row" onSubmit={handleSubmit}>
