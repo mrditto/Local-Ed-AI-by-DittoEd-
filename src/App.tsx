@@ -4,12 +4,20 @@ import { ChatPanel } from "./components/ChatPanel";
 import { PromptWizard } from "./components/PromptWizard";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { PersonalizePanel } from "./components/PersonalizePanel";
+import { IepFormAssistant } from "./components/IepFormAssistant";
 import { isConfigured } from "./config/anythingllm.config";
 import { Button } from "./components/ui/Button";
 import { prompts, type Prompt } from "./prompts";
 import { buildAssistantPreamble } from "./prompts/assistantPreamble";
 
-type View = "library" | "wizard" | "chat" | "assistant" | "settings" | "personalize";
+type View =
+  | "library"
+  | "wizard"
+  | "chat"
+  | "assistant"
+  | "settings"
+  | "personalize"
+  | "iep-assistant";
 
 const ASSISTANT_PROMPT: Prompt = {
   id: "ask-dittoed",
@@ -41,6 +49,12 @@ function App() {
     setActivePrompt(ASSISTANT_PROMPT);
     setInitialMessage(undefined);
     setView("assistant");
+  }
+
+  function openIepAssistant() {
+    setActivePrompt(null);
+    setInitialMessage(undefined);
+    setView("iep-assistant");
   }
 
   function backToLibrary() {
@@ -78,8 +92,13 @@ function App() {
           messagePreamble={assistantPreamble}
         />
       )}
+      {view === "iep-assistant" && <IepFormAssistant onBack={backToLibrary} />}
       {view === "library" && (
-        <PromptLibrary onSelectPrompt={openPrompt} onAskAssistant={openAssistant} />
+        <PromptLibrary
+          onSelectPrompt={openPrompt}
+          onAskAssistant={openAssistant}
+          onOpenIepAssistant={openIepAssistant}
+        />
       )}
     </main>
   );
