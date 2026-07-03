@@ -14,8 +14,11 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-fs": "^2.5.1",
     "@tauri-apps/plugin-http": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "docx": "^9.7.1",
     "mammoth": "^1.10.0",
     "pdfjs-dist": "^4.10.38",
     "react": "^19.1.0",

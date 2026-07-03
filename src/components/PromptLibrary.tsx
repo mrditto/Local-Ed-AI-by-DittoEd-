@@ -6,6 +6,7 @@ import { Card } from "./ui/Card";
 interface PromptLibraryProps {
   onSelectPrompt: (prompt: Prompt) => void;
   onAskAssistant: () => void;
+  onOpenIepAssistant: () => void;
 }
 
 const CATEGORY_ORDER: PromptCategory[] = [
@@ -19,7 +20,7 @@ const CATEGORY_ORDER: PromptCategory[] = [
   "admin",
 ];
 
-export function PromptLibrary({ onSelectPrompt, onAskAssistant }: PromptLibraryProps) {
+export function PromptLibrary({ onSelectPrompt, onAskAssistant, onOpenIepAssistant }: PromptLibraryProps) {
   const sections = CATEGORY_ORDER
     .map((category) => ({
       category,
@@ -63,6 +64,26 @@ export function PromptLibrary({ onSelectPrompt, onAskAssistant }: PromptLibraryP
           <section key={category} className="prompt-library-section">
             <h2 className="prompt-library-section-title">{CATEGORY_LABEL[category]}</h2>
             <div className="prompt-grid">
+              {category === "sped" && (
+                <Card
+                  className="prompt-card iep-assistant-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={onOpenIepAssistant}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onOpenIepAssistant();
+                    }
+                  }}
+                >
+                  <span className="prompt-card-category">{CATEGORY_LABEL.sped}</span>
+                  <h3 className="prompt-card-title">IEP Form Assistant</h3>
+                  <p className="prompt-card-description">
+                    answer questions section by section, get a completed draft form
+                  </p>
+                </Card>
+              )}
               {categoryPrompts.map((prompt) => (
                 <PromptCard key={prompt.id} prompt={prompt} onSelect={onSelectPrompt} />
               ))}

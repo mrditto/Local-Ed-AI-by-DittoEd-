@@ -114,6 +114,9 @@ body {
   font-size: 0.9rem;
   color: var(--color-text-muted);
 }
+.iep-assistant-card {
+  border-left: 4px solid #2f6db8;
+}
 
 /* Chat panel */
 .chat-panel {
@@ -472,4 +475,149 @@ body {
 .wizard-warning-banner p {
   margin: 0 0 6px;
   font-size: 0.88rem;
+}
+
+/* IEP assistant */
+.iep-assistant-panel {
+  max-width: 860px;
+}
+.iep-progress {
+  margin-bottom: 12px;
+}
+.iep-progress-text {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+.iep-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+.iep-progress-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+}
+.iep-section-form h3,
+.iep-review h3 {
+  margin-top: 0;
+}
+.iep-team-determination-label {
+  font-size: 0.82rem;
+  border-left: 4px solid var(--color-primary);
+  padding: 8px 10px;
+  margin: 10px 0 14px;
+  background: var(--color-bg);
+}
+.iep-checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.iep-narrative-actions {
+  margin-top: 2px;
+}
+.iep-wizard-actions {
+  justify-content: space-between;
+  gap: 8px;
+}
+.iep-wizard-actions-right {
+  display: flex;
+  gap: 8px;
+}
+.iep-repeatable-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.iep-repeatable-item {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--color-bg);
+}
+.iep-repeatable-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.iep-repeatable-item-header h4 {
+  margin: 0 0 6px;
+}
+.iep-review-section {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.iep-review-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.iep-review-section-header h4 {
+  margin: 0;
+}
+.iep-review-grid {
+  margin: 8px 0 0;
+}
+.iep-review-row {
+  margin-bottom: 8px;
+}
+.iep-review-row dt {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.iep-review-row dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.iep-export-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.iep-export-footer {
+  margin-top: 12px;
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  border-top: 1px dashed var(--color-border);
+  padding-top: 8px;
+}
+
+@media print {
+  body {
+    background: white;
+  }
+  .app-toolbar,
+  .wizard-header .btn,
+  .iep-progress,
+  .iep-export-actions,
+  .iep-review-section-header .btn {
+    display: none !important;
+  }
+  .app-shell,
+  .iep-assistant-panel,
+  .wizard-form.iep-review {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background: white;
+  }
+  .iep-export-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-top: none;
+    text-align: center;
+    padding: 6px 12px;
+    background: white;
+    color: #444;
+  }
 }
