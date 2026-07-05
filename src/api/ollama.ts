@@ -17,6 +17,21 @@ export type OllamaErrorKind =
   | "model_error"
   | "unknown";
 
+export interface PullProgressUpdate {
+  status: string;
+  completed: number | null;
+  total: number | null;
+  percent: number;
+}
+
+interface PullStreamEvent {
+  status?: unknown;
+  completed?: unknown;
+  total?: unknown;
+  done?: unknown;
+  error?: unknown;
+}
+
 const NOT_CONFIGURED_MESSAGE =
   "Local Ed AI isn't set up yet — open Settings and add your Ollama address and model.";
 
@@ -26,6 +41,22 @@ function modelMissingMessage(model: string): string {
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, "");
+}
+
+function toFiniteNumberOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function clampPercent(value: number): number {
+  return Math.max(0, Math.min(100, value));
+}
+
+function parsePullLine(line: string): PullStreamEvent | null {
+  try {
+    return JSON.parse(line) as PullStreamEvent;
+  } catch {
+    return null;
+  }
 }
 
 function extractModelNames(data: unknown): string[] {
@@ -129,6 +160,117 @@ export async function listModels(baseUrlOverride?: string): Promise<string[]> {
     throw new Error(result.message);
   }
   return result.value;
+}
+
+export async function pullModel(
+  model: string,
+  options?: {
+    baseUrl?: string;
+    onProgress?: (update: PullProgressUpdate) => void;
+  },
+): Promise<OllamaResult<void>> {
+  const baseUrl = options?.baseUrl ?? loadSettings().baseUrl;
+  const fetchFn = await resolveFetch();
+
+  try {
+    const res = await fetchFn(`${normalizeBaseUrl(baseUrl)}/api/pull`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: model,
+        stream: true,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await safeReadError(res);
+      const message =
+        errorText.length > 0
+          ? `Ollama couldn't start the download: ${errorText}`
+          : `Ollama responded with an unexpected status (${res.status}).`;
+      return { ok: false, error: "unknown", message };
+    }
+
+    if (!res.body) {
+      options?.onProgress?.({
+        status: "Download complete.",
+        completed: null,
+        total: null,
+        percent: 100,
+      });
+      return { ok: true, value: undefined };
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let latestPercent = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+
+        const event = parsePullLine(line);
+        if (!event) continue;
+
+        if (typeof event.error === "string" && event.error.length > 0) {
+          return { ok: false, error: "model_error", message: event.error };
+        }
+
+        const completed = toFiniteNumberOrNull(event.completed);
+        const total = toFiniteNumberOrNull(event.total);
+        if (completed !== null && total !== null && total > 0) {
+          latestPercent = clampPercent(Math.round((completed / total) * 100));
+        } else if (event.done === true) {
+          latestPercent = 100;
+        }
+
+        options?.onProgress?.({
+          status: typeof event.status === "string" ? event.status : "Downloading model…",
+          completed,
+          total,
+          percent: latestPercent,
+        });
+      }
+    }
+
+    const tail = `${buffer}${decoder.decode()}`.trim();
+    if (tail.length > 0) {
+      const event = parsePullLine(tail);
+      if (event) {
+        if (typeof event.error === "string" && event.error.length > 0) {
+          return { ok: false, error: "model_error", message: event.error };
+        }
+        if (event.done === true) {
+          latestPercent = 100;
+        }
+        options?.onProgress?.({
+          status: typeof event.status === "string" ? event.status : "Download complete.",
+          completed: toFiniteNumberOrNull(event.completed),
+          total: toFiniteNumberOrNull(event.total),
+          percent: latestPercent,
+        });
+      }
+    }
+
+    return { ok: true, value: undefined };
+  } catch {
+    return {
+      ok: false,
+      error: "connection_refused",
+      message: "Can't reach Ollama. Make sure Ollama is installed and running on this computer.",
+    };
+  }
 }
 
 export async function checkConnection(): Promise<OllamaResult<void>> {

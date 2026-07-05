@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { loadSettings, saveSettings } from "../config/anythingllm.config";
-import { checkConnection, listModels } from "../api/ollama";
+import { checkConnection, listModels, pullModel } from "../api/ollama";
+import { modelTiers } from "../data/modelTiers";
 import { Button } from "./ui/Button";
 import { Spinner } from "./ui/Spinner";
 
@@ -13,6 +14,12 @@ type TestState =
   | { kind: "testing" }
   | { kind: "success" }
   | { kind: "failure"; message: string };
+
+interface DownloadState {
+  model: string;
+  status: string;
+  percent: number;
+}
 
 /**
  * One-time (per machine) connection setup. Intended for the person setting
@@ -27,6 +34,8 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isRefreshingModels, setIsRefreshingModels] = useState(false);
   const [modelLoadError, setModelLoadError] = useState<string | null>(null);
+  const [downloadState, setDownloadState] = useState<DownloadState | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const refreshModels = useCallback(async (baseUrlOverride: string) => {
     setIsRefreshingModels(true);
@@ -46,6 +55,51 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
     void refreshModels(initial.baseUrl);
   }, [initial.baseUrl, refreshModels]);
 
+  function saveSelectedModel(nextModel: string) {
+    const normalizedBaseUrl = baseUrl.trim() || "http://localhost:11434";
+    saveSettings({
+      baseUrl: normalizedBaseUrl,
+      model: nextModel,
+    });
+    setModel(nextModel);
+  }
+
+  async function handleDownloadAndSelect(nextModel: string) {
+    const normalizedBaseUrl = baseUrl.trim() || "http://localhost:11434";
+    setDownloadError(null);
+    setDownloadState({
+      model: nextModel,
+      status: "Starting download…",
+      percent: 0,
+    });
+
+    const result = await pullModel(nextModel, {
+      baseUrl: normalizedBaseUrl,
+      onProgress: (progress) => {
+        setDownloadState((current) => {
+          if (!current || current.model !== nextModel) {
+            return current;
+          }
+          return {
+            model: nextModel,
+            status: progress.status,
+            percent: progress.percent,
+          };
+        });
+      },
+    });
+
+    if (!result.ok) {
+      setDownloadState(null);
+      setDownloadError(`Couldn't download ${nextModel}. ${result.message}`);
+      return;
+    }
+
+    await refreshModels(normalizedBaseUrl);
+    saveSelectedModel(nextModel);
+    setDownloadState(null);
+  }
+
   async function handleSaveAndTest() {
     saveSettings({
       baseUrl: baseUrl.trim() || "http://localhost:11434",
@@ -61,6 +115,7 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
   }
 
   const canSave = baseUrl.trim().length > 0 && model.trim().length > 0;
+  const isDownloadInProgress = downloadState !== null;
 
   return (
     <div className="settings-panel">
@@ -87,44 +142,126 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
       </div>
 
       <div className="settings-field">
-        <div className="settings-field-row">
-          <label htmlFor="settings-model">Model</label>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => void refreshModels(baseUrl)}
-            disabled={isRefreshingModels}
-          >
-            Refresh
-          </Button>
-        </div>
+        <label>Model tier</label>
+        <div className="settings-model-tiers">
+          {modelTiers.map((tier) => {
+            const isInstalled = availableModels.includes(tier.model);
+            const isActive = model === tier.model;
+            const isDownloadingThisTier = downloadState?.model === tier.model;
 
-        {availableModels.length > 0 && !modelLoadError ? (
-          <select
-            id="settings-model"
-            value={model}
-            onChange={(e) => setModel(e.currentTarget.value)}
-          >
-            {!availableModels.includes(model) && <option value={model}>{model}</option>}
-            {availableModels.map((availableModel) => (
-              <option key={availableModel} value={availableModel}>
-                {availableModel}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            id="settings-model"
-            type="text"
-            value={model}
-            onChange={(e) => setModel(e.currentTarget.value)}
-            placeholder="phi4-mini:latest"
-          />
-        )}
+            return (
+              <article
+                key={tier.id}
+                className={`model-tier-card ${isActive ? "model-tier-card-active" : ""}`.trim()}
+              >
+                <div className="model-tier-header">
+                  <h3>
+                    {tier.label}
+                    {tier.badge && <span className="model-tier-badge">{tier.badge}</span>}
+                    {isActive && (
+                      <span className="model-tier-check" aria-label="Currently selected model">
+                        ✓
+                      </span>
+                    )}
+                  </h3>
+                  <span
+                    className={`model-tier-status ${
+                      isInstalled ? "model-tier-status-installed" : "model-tier-status-missing"
+                    }`.trim()}
+                  >
+                    {isInstalled ? "Installed" : "Not installed"}
+                  </span>
+                </div>
+                <p className="model-tier-model">
+                  {tier.model} • {tier.downloadSize}
+                </p>
+                <p className="model-tier-blurb">{tier.blurb}</p>
+                {isInstalled ? (
+                  <Button
+                    type="button"
+                    variant={isActive ? "secondary" : "primary"}
+                    onClick={() => saveSelectedModel(tier.model)}
+                    disabled={isActive || isDownloadInProgress}
+                  >
+                    Use this model
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => void handleDownloadAndSelect(tier.model)}
+                    disabled={isDownloadInProgress && !isDownloadingThisTier}
+                  >
+                    {isDownloadingThisTier
+                      ? `Downloading (${Math.round(downloadState.percent)}%)`
+                      : `Download (${tier.downloadSize})`}
+                  </Button>
+                )}
+
+                {isDownloadingThisTier && downloadState && (
+                  <div className="model-tier-progress" role="status" aria-live="polite">
+                    <div className="model-tier-progress-text">
+                      <span>{downloadState.status}</span>
+                      <span>{Math.round(downloadState.percent)}%</span>
+                    </div>
+                    <div className="model-tier-progress-bar">
+                      <div
+                        className="model-tier-progress-bar-fill"
+                        style={{ width: `${Math.round(downloadState.percent)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
 
         {isRefreshingModels && <Spinner label="Loading installed models…" />}
         {modelLoadError && <span className="settings-hint">{modelLoadError}</span>}
+        {downloadError && <div className="connection-banner connection-banner-error">{downloadError}</div>}
       </div>
+
+      <details className="settings-advanced">
+        <summary>Advanced</summary>
+        <div className="settings-field">
+          <div className="settings-field-row">
+            <label htmlFor="settings-model">All installed models</label>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => void refreshModels(baseUrl)}
+              disabled={isRefreshingModels || isDownloadInProgress}
+            >
+              Refresh
+            </Button>
+          </div>
+          {availableModels.length > 0 && !modelLoadError ? (
+            <select
+              id="settings-model"
+              value={model}
+              onChange={(e) => setModel(e.currentTarget.value)}
+              disabled={isDownloadInProgress}
+            >
+              {!availableModels.includes(model) && <option value={model}>{model}</option>}
+              {availableModels.map((availableModel) => (
+                <option key={availableModel} value={availableModel}>
+                  {availableModel}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              id="settings-model"
+              type="text"
+              value={model}
+              onChange={(e) => setModel(e.currentTarget.value)}
+              placeholder="phi4-mini:latest"
+              disabled={isDownloadInProgress}
+            />
+          )}
+        </div>
+      </details>
 
       <div className="settings-actions">
         <Button onClick={handleSaveAndTest} disabled={!canSave || testState.kind === "testing"}>
