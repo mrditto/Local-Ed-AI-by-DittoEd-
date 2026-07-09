@@ -468,6 +468,18 @@ body {
   background: var(--color-primary);
   transition: width 0.2s ease;
 }
+.model-tier-progress-bar-fill-indeterminate {
+  width: 35%;
+  animation: model-tier-indeterminate 1.2s ease-in-out infinite;
+}
+@keyframes model-tier-indeterminate {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
 .settings-advanced {
   margin-top: 8px;
   margin-bottom: 16px;

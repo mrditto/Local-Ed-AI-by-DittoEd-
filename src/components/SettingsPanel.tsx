@@ -19,6 +19,7 @@ interface DownloadState {
   model: string;
   status: string;
   percent: number;
+  indeterminate: boolean;
 }
 
 /**
@@ -71,6 +72,7 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
       model: nextModel,
       status: "Starting download…",
       percent: 0,
+      indeterminate: false,
     });
 
     const result = await pullModel(nextModel, {
@@ -84,6 +86,7 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
             model: nextModel,
             status: progress.status,
             percent: progress.percent,
+            indeterminate: progress.indeterminate ?? false,
           };
         });
       },
@@ -193,7 +196,9 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
                     disabled={isDownloadInProgress && !isDownloadingThisTier}
                   >
                     {isDownloadingThisTier
-                      ? `Downloading (${Math.round(downloadState.percent)}%)`
+                      ? downloadState.indeterminate
+                        ? "Downloading…"
+                        : `Downloading (${Math.round(downloadState.percent)}%)`
                       : `Download (${tier.downloadSize})`}
                   </Button>
                 )}
@@ -202,12 +207,20 @@ export function SettingsPanel({ onDone }: SettingsPanelProps) {
                   <div className="model-tier-progress" role="status" aria-live="polite">
                     <div className="model-tier-progress-text">
                       <span>{downloadState.status}</span>
-                      <span>{Math.round(downloadState.percent)}%</span>
+                      <span>
+                        {downloadState.indeterminate ? "..." : `${Math.round(downloadState.percent)}%`}
+                      </span>
                     </div>
                     <div className="model-tier-progress-bar">
                       <div
-                        className="model-tier-progress-bar-fill"
-                        style={{ width: `${Math.round(downloadState.percent)}%` }}
+                        className={`model-tier-progress-bar-fill ${
+                          downloadState.indeterminate ? "model-tier-progress-bar-fill-indeterminate" : ""
+                        }`.trim()}
+                        style={
+                          downloadState.indeterminate
+                            ? undefined
+                            : { width: `${Math.round(downloadState.percent)}%` }
+                        }
                       />
                     </div>
                   </div>
