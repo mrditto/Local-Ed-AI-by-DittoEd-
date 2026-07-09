@@ -1,4 +1,5 @@
 import { isConfigured, loadSettings, requestTimeoutMs } from "../config/anythingllm.config";
+import { fetch } from "@tauri-apps/plugin-http";
 
 export type ChatRole = "user" | "assistant";
 
@@ -22,6 +23,7 @@ export interface PullProgressUpdate {
   completed: number | null;
   total: number | null;
   percent: number;
+  indeterminate?: boolean;
 }
 
 interface PullStreamEvent {
@@ -89,38 +91,15 @@ async function safeReadError(res: Response): Promise<string> {
   }
 }
 
-/** Resolved once per app lifetime; reused on subsequent calls. */
-let _resolvedFetch: typeof globalThis.fetch | undefined;
-
-/**
- * Returns the Tauri HTTP plugin fetch when running inside a Tauri window,
- * otherwise falls back to the standard browser fetch.  This means the app
- * works both as a Tauri desktop app (no CORS/OLLAMA_ORIGINS needed) and in
- * a plain Vite dev-server browser session.
- */
-async function resolveFetch(): Promise<typeof globalThis.fetch> {
-  if (_resolvedFetch) return _resolvedFetch;
-
-  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-    const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
-    _resolvedFetch = tauriFetch as unknown as typeof globalThis.fetch;
-  } else {
-    _resolvedFetch = globalThis.fetch.bind(globalThis);
-  }
-
-  return _resolvedFetch;
-}
-
 async function fetchTags(
   baseUrl: string,
   timeoutMs: number,
 ): Promise<OllamaResult<string[]>> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  const fetchFn = await resolveFetch();
 
   try {
-    const res = await fetchFn(`${normalizeBaseUrl(baseUrl)}/api/tags`, {
+    const res = await fetch(`${normalizeBaseUrl(baseUrl)}/api/tags`, {
       method: "GET",
       signal: controller.signal,
     });
@@ -162,6 +141,69 @@ export async function listModels(baseUrlOverride?: string): Promise<string[]> {
   return result.value;
 }
 
+async function pollUntilModelInstalled(
+  baseUrl: string,
+  model: string,
+  onProgress?: (update: PullProgressUpdate) => void,
+): Promise<OllamaResult<void>> {
+  const waitingMessage = "Downloading... this can take several minutes";
+  onProgress?.({
+    status: waitingMessage,
+    completed: null,
+    total: null,
+    percent: 0,
+    indeterminate: true,
+  });
+
+  while (true) {
+    const tagsResult = await fetchTags(baseUrl, 5_000);
+    if (!tagsResult.ok) {
+      return tagsResult;
+    }
+
+    if (tagsResult.value.includes(model)) {
+      onProgress?.({
+        status: "Download complete.",
+        completed: null,
+        total: null,
+        percent: 100,
+        indeterminate: false,
+      });
+      return { ok: true, value: undefined };
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 5_000));
+  }
+}
+
+async function pullModelWithoutStreaming(
+  baseUrl: string,
+  model: string,
+  onProgress?: (update: PullProgressUpdate) => void,
+): Promise<OllamaResult<void>> {
+  const res = await fetch(`${normalizeBaseUrl(baseUrl)}/api/pull`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: model,
+      stream: false,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await safeReadError(res);
+    const message =
+      errorText.length > 0
+        ? `Ollama couldn't start the download: ${errorText}`
+        : `Ollama responded with an unexpected status (${res.status}).`;
+    return { ok: false, error: "unknown", message };
+  }
+
+  return pollUntilModelInstalled(baseUrl, model, onProgress);
+}
+
 export async function pullModel(
   model: string,
   options?: {
@@ -170,10 +212,9 @@ export async function pullModel(
   },
 ): Promise<OllamaResult<void>> {
   const baseUrl = options?.baseUrl ?? loadSettings().baseUrl;
-  const fetchFn = await resolveFetch();
 
   try {
-    const res = await fetchFn(`${normalizeBaseUrl(baseUrl)}/api/pull`, {
+    const res = await fetch(`${normalizeBaseUrl(baseUrl)}/api/pull`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -193,14 +234,8 @@ export async function pullModel(
       return { ok: false, error: "unknown", message };
     }
 
-    if (!res.body) {
-      options?.onProgress?.({
-        status: "Download complete.",
-        completed: null,
-        total: null,
-        percent: 100,
-      });
-      return { ok: true, value: undefined };
+    if (!res.body || typeof res.body.getReader !== "function") {
+      return pullModelWithoutStreaming(baseUrl, model, options?.onProgress);
     }
 
     const reader = res.body.getReader();
@@ -240,6 +275,7 @@ export async function pullModel(
           completed,
           total,
           percent: latestPercent,
+          indeterminate: false,
         });
       }
     }
@@ -259,6 +295,7 @@ export async function pullModel(
           completed: toFiniteNumberOrNull(event.completed),
           total: toFiniteNumberOrNull(event.total),
           percent: latestPercent,
+          indeterminate: false,
         });
       }
     }
@@ -303,10 +340,9 @@ export async function sendChat(messages: ChatRequestMessage[]): Promise<OllamaRe
   const settings = loadSettings();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
-  const fetchFn = await resolveFetch();
 
   try {
-    const res = await fetchFn(`${normalizeBaseUrl(settings.baseUrl)}/api/chat`, {
+    const res = await fetch(`${normalizeBaseUrl(settings.baseUrl)}/api/chat`, {
       method: "POST",
       signal: controller.signal,
       headers: {
