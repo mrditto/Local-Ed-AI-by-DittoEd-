@@ -1,5 +1,8 @@
 import { isConfigured, loadSettings, requestTimeoutMs } from "../config/anythingllm.config";
 import { fetch } from "@tauri-apps/plugin-http";
+import { writeFile } from "@tauri-apps/plugin-fs";
+import { join, tempDir } from "@tauri-apps/api/path";
+import { openPath } from "@tauri-apps/plugin-opener";
 
 export type ChatRole = "user" | "assistant";
 
@@ -26,6 +29,13 @@ export interface PullProgressUpdate {
   indeterminate?: boolean;
 }
 
+export interface DownloadProgressUpdate {
+  downloaded: number;
+  total: number | null;
+  percent: number;
+  indeterminate: boolean;
+}
+
 interface PullStreamEvent {
   status?: unknown;
   completed?: unknown;
@@ -36,6 +46,8 @@ interface PullStreamEvent {
 
 const NOT_CONFIGURED_MESSAGE =
   "Local Ed AI isn't set up yet — open Settings and add your Ollama address and model.";
+const OLLAMA_INSTALLER_BASE_URL = "https://ollama.com";
+const OLLAMA_INSTALLER_PATH = "/download/OllamaSetup.exe";
 
 function modelMissingMessage(model: string): string {
   return `The model ${model} isn't downloaded yet. Run 'ollama pull ${model}' or ask your administrator.`;
@@ -45,7 +57,7 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, "");
 }
 
-function ollamaFetch(
+export function ollamaFetch(
   baseUrl: string,
   path: string,
   init?: RequestInit,
@@ -150,13 +162,104 @@ async function fetchTags(
   }
 }
 
+export async function checkOllamaHealth(options?: {
+  baseUrl?: string;
+  timeoutMs?: number;
+}): Promise<OllamaResult<string[]>> {
+  const baseUrl = options?.baseUrl ?? loadSettings().baseUrl;
+  const timeoutMs = options?.timeoutMs ?? 5_000;
+  return fetchTags(baseUrl, timeoutMs);
+}
+
 export async function listModels(baseUrlOverride?: string): Promise<string[]> {
-  const baseUrl = baseUrlOverride ?? loadSettings().baseUrl;
-  const result = await fetchTags(baseUrl, 5_000);
+  const result = await checkOllamaHealth({ baseUrl: baseUrlOverride, timeoutMs: 5_000 });
   if (!result.ok) {
     throw new Error(result.message);
   }
   return result.value;
+}
+
+export async function downloadAndLaunchOllamaInstaller(options?: {
+  onProgress?: (progress: DownloadProgressUpdate) => void;
+}): Promise<OllamaResult<string>> {
+  try {
+    const response = await ollamaFetch(OLLAMA_INSTALLER_BASE_URL, OLLAMA_INSTALLER_PATH, {
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: "unknown",
+        message: `Couldn't download the Ollama installer (${response.status}).`,
+      };
+    }
+
+    const totalHeader = response.headers.get("content-length");
+    const total = totalHeader ? Number.parseInt(totalHeader, 10) : Number.NaN;
+    const totalBytes = Number.isFinite(total) && total > 0 ? total : null;
+    let downloadedBytes = 0;
+    options?.onProgress?.({
+      downloaded: 0,
+      total: totalBytes,
+      percent: 0,
+      indeterminate: totalBytes === null,
+    });
+
+    let bytes: Uint8Array;
+    if (response.body && typeof response.body.getReader === "function") {
+      const chunks: Uint8Array[] = [];
+      const reader = response.body.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!value) continue;
+        chunks.push(value);
+        downloadedBytes += value.byteLength;
+        options?.onProgress?.({
+          downloaded: downloadedBytes,
+          total: totalBytes,
+          percent: totalBytes ? clampPercent(Math.round((downloadedBytes / totalBytes) * 100)) : 0,
+          indeterminate: totalBytes === null,
+        });
+      }
+
+      bytes = new Uint8Array(downloadedBytes);
+      let offset = 0;
+      for (const chunk of chunks) {
+        bytes.set(chunk, offset);
+        offset += chunk.byteLength;
+      }
+    } else {
+      const buffer = await response.arrayBuffer();
+      bytes = new Uint8Array(buffer);
+      downloadedBytes = bytes.byteLength;
+      options?.onProgress?.({
+        downloaded: downloadedBytes,
+        total: totalBytes,
+        percent: 100,
+        indeterminate: false,
+      });
+    }
+
+    const installerPath = await join(await tempDir(), "OllamaSetup.exe");
+    await writeFile(installerPath, bytes);
+    options?.onProgress?.({
+      downloaded: downloadedBytes,
+      total: totalBytes ?? downloadedBytes,
+      percent: 100,
+      indeterminate: false,
+    });
+
+    await openPath(installerPath);
+    return { ok: true, value: installerPath };
+  } catch {
+    return {
+      ok: false,
+      error: "unknown",
+      message: "Couldn't download or launch the Ollama installer. Please try again.",
+    };
+  }
 }
 
 async function pollUntilModelInstalled(
@@ -328,7 +431,7 @@ export async function checkConnection(): Promise<OllamaResult<void>> {
   }
 
   const settings = loadSettings();
-  const tagsResult = await fetchTags(settings.baseUrl, 5_000);
+  const tagsResult = await checkOllamaHealth({ baseUrl: settings.baseUrl, timeoutMs: 5_000 });
   if (!tagsResult.ok) {
     return tagsResult;
   }

@@ -27,6 +27,68 @@ body {
   padding: 24px;
   min-height: 100vh;
 }
+.app-shell-setup {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+.setup-screen {
+  min-height: calc(100vh - 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.setup-card {
+  width: min(100%, 860px);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.setup-card h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+.setup-card-models {
+  width: min(100%, 980px);
+}
+.setup-lede {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  max-width: 72ch;
+}
+.setup-primary-button {
+  width: fit-content;
+  min-width: 240px;
+  min-height: 48px;
+  font-size: 1rem;
+}
+.setup-link-button {
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  padding: 0;
+  text-align: left;
+  width: fit-content;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+.setup-link-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.setup-error-actions {
+  margin-top: 10px;
+}
+.setup-actions {
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
 
 /* Prompt library */
 .prompt-library-header h1 {
