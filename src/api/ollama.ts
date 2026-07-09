@@ -45,6 +45,24 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, "");
 }
 
+function ollamaFetch(
+  baseUrl: string,
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  headers.set("Origin", "http://localhost");
+
+  if (init?.body !== undefined && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  return fetch(`${normalizeBaseUrl(baseUrl)}${path}`, {
+    ...init,
+    headers,
+  });
+}
+
 function toFiniteNumberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -99,7 +117,7 @@ async function fetchTags(
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(`${normalizeBaseUrl(baseUrl)}/api/tags`, {
+    const res = await ollamaFetch(baseUrl, "/api/tags", {
       method: "GET",
       signal: controller.signal,
     });
@@ -181,11 +199,8 @@ async function pullModelWithoutStreaming(
   model: string,
   onProgress?: (update: PullProgressUpdate) => void,
 ): Promise<OllamaResult<void>> {
-  const res = await fetch(`${normalizeBaseUrl(baseUrl)}/api/pull`, {
+  const res = await ollamaFetch(baseUrl, "/api/pull", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify({
       name: model,
       stream: false,
@@ -214,11 +229,8 @@ export async function pullModel(
   const baseUrl = options?.baseUrl ?? loadSettings().baseUrl;
 
   try {
-    const res = await fetch(`${normalizeBaseUrl(baseUrl)}/api/pull`, {
+    const res = await ollamaFetch(baseUrl, "/api/pull", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({
         name: model,
         stream: true,
@@ -342,12 +354,9 @@ export async function sendChat(messages: ChatRequestMessage[]): Promise<OllamaRe
   const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
 
   try {
-    const res = await fetch(`${normalizeBaseUrl(settings.baseUrl)}/api/chat`, {
+    const res = await ollamaFetch(settings.baseUrl, "/api/chat", {
       method: "POST",
       signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify({
         model: settings.model,
         messages,
