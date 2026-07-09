@@ -56,16 +56,17 @@ function buildEmptyItem(section: MdIepSectionSchema): SectionValues {
   return item;
 }
 
+function buildEmptyRepeatableItems(section: MdIepSectionSchema): SectionValues[] {
+  return Array.from({ length: Math.max(1, section.repeatable?.minItems ?? 1) }, () => buildEmptyItem(section));
+}
+
 function buildInitialDraft(): IepDraftState {
   const sections: Record<string, SectionValues> = {};
   const repeatableSections: Record<string, SectionValues[]> = {};
 
   mdIepFormSections.forEach((section) => {
     if (section.repeatable) {
-      repeatableSections[section.id] = Array.from(
-        { length: Math.max(1, section.repeatable.minItems) },
-        () => buildEmptyItem(section),
-      );
+      repeatableSections[section.id] = buildEmptyRepeatableItems(section);
       return;
     }
     sections[section.id] = buildEmptyItem(section);
@@ -121,6 +122,30 @@ function stringifyValue(value: FieldValue): string {
   return value.trim();
 }
 
+function hasValue(value: FieldValue | undefined): boolean {
+  if (typeof value === "boolean") return value;
+  return Boolean(value?.trim());
+}
+
+function sectionHasAnswers(draft: IepDraftState, activeSection: MdIepSectionSchema): boolean {
+  const itemHasAnswers = (values: SectionValues | undefined) =>
+    activeSection.fields.some((field) => {
+      if (hasValue(values?.[field.id])) {
+        return true;
+      }
+      if (field.kind === "narrative" && hasValue(values?.[`${field.id}__seed`])) {
+        return true;
+      }
+      return false;
+    });
+
+  if (activeSection.repeatable) {
+    return (draft.repeatableSections[activeSection.id] ?? []).some((item) => itemHasAnswers(item));
+  }
+
+  return itemHasAnswers(draft.sections[activeSection.id]);
+}
+
 function isTauriRuntime(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
@@ -132,6 +157,7 @@ export function IepFormAssistant({ onBack }: IepFormAssistantProps) {
   const [draftingKey, setDraftingKey] = useState<string | null>(null);
   const [draftError, setDraftError] = useState<string>("");
   const [exportMessage, setExportMessage] = useState<string>("");
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
 
   const studentSectionValues = draft.sections["student-school-information"] ?? {};
   const computedAge = computeAge(
@@ -262,13 +288,38 @@ export function IepFormAssistant({ onBack }: IepFormAssistantProps) {
     setSingleSectionField(activeSection.id, field.id, result.value.trim());
   }
 
-  function skipCurrentSection() {
-    if (!section) return;
+  function advanceToNextStep() {
+    setCurrentStep((prev) => Math.min(prev + 1, visibleSections.length));
+  }
+
+  function discardAndSkipSection(activeSection: MdIepSectionSchema) {
     setDraft((prev) => ({
       ...prev,
-      skippedSectionIds: Array.from(new Set([...prev.skippedSectionIds, section.id])),
+      sections: activeSection.repeatable
+        ? prev.sections
+        : {
+            ...prev.sections,
+            [activeSection.id]: buildEmptyItem(activeSection),
+          },
+      repeatableSections: activeSection.repeatable
+        ? {
+            ...prev.repeatableSections,
+            [activeSection.id]: buildEmptyRepeatableItems(activeSection),
+          }
+        : prev.repeatableSections,
+      skippedSectionIds: Array.from(new Set([...prev.skippedSectionIds, activeSection.id])),
     }));
-    setCurrentStep((prev) => Math.min(prev + 1, visibleSections.length));
+    setShowSkipConfirm(false);
+    advanceToNextStep();
+  }
+
+  function skipCurrentSection() {
+    if (!section) return;
+    if (sectionHasAnswers(draft, section)) {
+      setShowSkipConfirm(true);
+      return;
+    }
+    discardAndSkipSection(section);
   }
 
   function addRepeatableItem(activeSection: MdIepSectionSchema) {
@@ -637,6 +688,29 @@ export function IepFormAssistant({ onBack }: IepFormAssistantProps) {
               </Button>
             </div>
           </div>
+
+          {showSkipConfirm && (
+            <div className="iep-skip-confirm-backdrop" role="presentation">
+              <div className="iep-skip-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="iep-skip-confirm-title">
+                <h4 id="iep-skip-confirm-title">This section has answers. Keep them or discard?</h4>
+                <div className="iep-skip-confirm-actions">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      markSectionCompleted(section.id);
+                      setShowSkipConfirm(false);
+                      advanceToNextStep();
+                    }}
+                  >
+                    Keep answers &amp; continue
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={() => discardAndSkipSection(section)}>
+                    Discard &amp; skip
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -654,7 +728,7 @@ export function IepFormAssistant({ onBack }: IepFormAssistantProps) {
                   Edit
                 </Button>
               </div>
-              {draft.skippedSectionIds.includes(activeSection.id) ? (
+              {draft.skippedSectionIds.includes(activeSection.id) && !sectionHasAnswers(draft, activeSection) ? (
                 <p className="settings-hint">Skipped by user.</p>
               ) : (
                 <dl className="iep-review-grid">
