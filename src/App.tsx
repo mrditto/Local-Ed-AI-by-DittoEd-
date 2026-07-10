@@ -12,7 +12,10 @@ import { buildAssistantPreamble } from "./prompts/assistantPreamble";
 import { modelTiers } from "./data/modelTiers";
 import {
   checkOllamaHealth,
-  downloadAndLaunchOllamaInstaller,
+  downloadOllamaInstaller,
+  launchOllamaInstaller,
+  openInstallerFolder,
+  getInstallerPath,
   pullModel,
   type PullProgressUpdate,
 } from "./api/ollama";
@@ -63,6 +66,8 @@ function App() {
     () => loadSettings().baseUrl.trim() || "http://localhost:11434",
   );
   const [installerDownloadState, setInstallerDownloadState] = useState<InstallerDownloadState | null>(null);
+  const [downloadedInstallerPath, setDownloadedInstallerPath] = useState<string | null>(null);
+  const [launchFailed, setLaunchFailed] = useState(false);
   const [isPollingOllamaStartup, setIsPollingOllamaStartup] = useState(false);
   const [selectedStarterModel, setSelectedStarterModel] = useState("phi4-mini:latest");
   const [starterModelDownloadState, setStarterModelDownloadState] = useState<ModelDownloadState | null>(null);
@@ -148,31 +153,56 @@ function App() {
 
   async function handleInstallOllama() {
     setSetupError(null);
-    setInstallerDownloadState({
-      status: "Downloading Ollama installer…",
-      downloaded: 0,
-      total: null,
-      percent: 0,
-      indeterminate: true,
-    });
+    setLaunchFailed(false);
 
-    const result = await downloadAndLaunchOllamaInstaller({
-      onProgress: (progress) => {
-        setInstallerDownloadState({
-          status: progress.indeterminate
-            ? "Downloading Ollama installer…"
-            : `Downloading Ollama installer… ${Math.round(progress.percent)}%`,
-          downloaded: progress.downloaded,
-          total: progress.total,
-          percent: progress.percent,
-          indeterminate: progress.indeterminate,
-        });
-      },
-    });
+    // If we already have a downloaded file, skip straight to launch.
+    const existingPath = downloadedInstallerPath ?? (await getInstallerPath());
+    const skipDownload = downloadedInstallerPath !== null;
 
-    if (!result.ok) {
+    let installerPath = existingPath;
+
+    if (!skipDownload) {
+      setInstallerDownloadState({
+        status: "Downloading Ollama installer…",
+        downloaded: 0,
+        total: null,
+        percent: 0,
+        indeterminate: true,
+      });
+
+      const downloadResult = await downloadOllamaInstaller({
+        onProgress: (progress) => {
+          setInstallerDownloadState({
+            status: progress.indeterminate
+              ? "Downloading Ollama installer…"
+              : `Downloading Ollama installer… ${Math.round(progress.percent)}%`,
+            downloaded: progress.downloaded,
+            total: progress.total,
+            percent: progress.percent,
+            indeterminate: progress.indeterminate,
+          });
+        },
+      });
+
+      if (!downloadResult.ok) {
+        setInstallerDownloadState(null);
+        setSetupError(downloadResult.message);
+        return;
+      }
+
+      installerPath = downloadResult.value;
+      setDownloadedInstallerPath(installerPath);
+    }
+
+    // Attempt to launch via native command (not opener, which may block .exe in packaged app).
+    const launchResult = await launchOllamaInstaller(installerPath);
+
+    if (!launchResult.ok) {
+      // Launch failed — show manual-run message. Do NOT restart the download.
       setInstallerDownloadState(null);
-      setSetupError(result.message);
+      setLaunchFailed(true);
+      // Still start polling in case user runs it themselves.
+      setIsPollingOllamaStartup(true);
       return;
     }
 
@@ -271,13 +301,20 @@ function App() {
             <p className="setup-lede">
               Local Ed AI runs on Ollama, a free local AI engine. Nothing you type ever leaves this computer.
             </p>
-            <Button
-              className="setup-primary-button"
-              onClick={() => void handleInstallOllama()}
-              disabled={installerDownloadState !== null}
-            >
-              {installerDownloadState ? "Installing Ollama…" : "Install Ollama for me"}
-            </Button>
+
+            {!launchFailed && (
+              <Button
+                className="setup-primary-button"
+                onClick={() => void handleInstallOllama()}
+                disabled={installerDownloadState !== null}
+              >
+                {installerDownloadState
+                  ? "Installing Ollama…"
+                  : downloadedInstallerPath
+                    ? "Run Ollama installer"
+                    : "Install Ollama for me"}
+              </Button>
+            )}
 
             {installerDownloadState && (
               <div className="model-tier-progress" role="status" aria-live="polite">
@@ -298,6 +335,40 @@ function App() {
                         : { width: `${Math.round(installerDownloadState.percent)}%` }
                     }
                   />
+                </div>
+              </div>
+            )}
+
+            {launchFailed && downloadedInstallerPath && (
+              <div className="setup-launch-failed">
+                <p className="setup-launch-failed-msg">
+                  Installer downloaded — we couldn&apos;t start it automatically.
+                </p>
+                <div className="setup-launch-failed-actions">
+                  <Button
+                    className="setup-primary-button"
+                    onClick={() => void launchOllamaInstaller(downloadedInstallerPath).then((r) => {
+                      if (r.ok) {
+                        setLaunchFailed(false);
+                        setInstallerDownloadState({
+                          status: "Installer launched. Waiting for Ollama to start…",
+                          downloaded: 0,
+                          total: null,
+                          percent: 100,
+                          indeterminate: false,
+                        });
+                      }
+                    })}
+                  >
+                    Try launching again
+                  </Button>
+                  <button
+                    type="button"
+                    className="setup-link-button"
+                    onClick={() => void openInstallerFolder(downloadedInstallerPath)}
+                  >
+                    Open the folder containing the installer
+                  </button>
                 </div>
               </div>
             )}

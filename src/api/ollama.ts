@@ -1,5 +1,4 @@
 import { isConfigured, loadSettings, requestTimeoutMs } from "../config/anythingllm.config";
-import { fetch } from "@tauri-apps/plugin-http";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { join, tempDir } from "@tauri-apps/api/path";
@@ -45,9 +44,22 @@ interface PullStreamEvent {
   error?: unknown;
 }
 
+interface ChatStreamEvent {
+  message?: { content?: unknown };
+  done?: unknown;
+  error?: unknown;
+}
+
 interface OllamaDownloadProgressEvent {
   downloaded?: unknown;
   total?: unknown;
+}
+
+interface OllamaLineStreamPayload {
+  requestId?: unknown;
+  line?: unknown;
+  done?: unknown;
+  error?: unknown;
 }
 
 const NOT_CONFIGURED_MESSAGE =
@@ -61,24 +73,6 @@ function modelMissingMessage(model: string): string {
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, "");
-}
-
-export function ollamaFetch(
-  baseUrl: string,
-  path: string,
-  init?: RequestInit,
-): Promise<Response> {
-  const headers = new Headers(init?.headers);
-  headers.set("Origin", "http://localhost");
-
-  if (init?.body !== undefined && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  return fetch(`${normalizeBaseUrl(baseUrl)}${path}`, {
-    ...init,
-    headers,
-  });
 }
 
 function toFiniteNumberOrNull(value: unknown): number | null {
@@ -118,54 +112,147 @@ function extractModelNames(data: unknown): string[] {
     .filter((name): name is string => Boolean(name));
 }
 
-async function safeReadError(res: Response): Promise<string> {
+function generateRequestId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function toErrorMessage(err: unknown, fallback: string): string {
+  if (typeof err === "string" && err.length > 0) return err;
+  if (err instanceof Error && err.message.length > 0) return err.message;
+  return fallback;
+}
+
+function classifyConnectionError(message: string, timeoutFallback: string): OllamaResult<never> {
+  if (/timed out|timeout/i.test(message)) {
+    return { ok: false, error: "timeout", message: timeoutFallback };
+  }
+  return {
+    ok: false,
+    error: "connection_refused",
+    message: "Can't reach Ollama. Make sure Ollama is installed and running on this computer.",
+  };
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
   try {
-    const data = (await res.json()) as { error?: unknown };
-    return typeof data.error === "string" ? data.error : "";
-  } catch {
-    return "";
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(timeoutMessage));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer !== null) {
+      clearTimeout(timer);
+    }
   }
 }
 
-async function fetchTags(
-  baseUrl: string,
-  timeoutMs: number,
-): Promise<OllamaResult<string[]>> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+export async function ollamaFetch(baseUrl: string, path: string, timeoutMs = 5_000): Promise<OllamaResult<unknown>> {
+  try {
+    const raw = await withTimeout(
+      invoke<string>("ollama_get_json", {
+        url: `${normalizeBaseUrl(baseUrl)}${path}`,
+      }),
+      timeoutMs,
+      "Ollama didn't respond in time. Is it still starting up?",
+    );
+    return { ok: true, value: JSON.parse(raw) as unknown };
+  } catch (err) {
+    const message = toErrorMessage(err, "Couldn't read Ollama response.");
+    if (/didn't respond in time/i.test(message)) {
+      return { ok: false, error: "timeout", message };
+    }
+    if (/unexpected status \(404\)|not found/i.test(message)) {
+      return { ok: false, error: "model_missing", message };
+    }
+    if (/unexpected status/i.test(message)) {
+      return { ok: false, error: "unknown", message };
+    }
+    return classifyConnectionError(message, "Ollama didn't respond in time. Is it still starting up?");
+  }
+}
+
+async function invokeOllamaLineStream(options: {
+  command: "ollama_chat_stream" | "ollama_pull_stream";
+  eventName: "ollama-chat-stream" | "ollama-pull-stream";
+  url: string;
+  bodyJson: string;
+  requestId: string;
+  timeoutMs: number;
+  onLine: (line: string) => void;
+}): Promise<void> {
+  let done = false;
+  let completeResolve: (() => void) | null = null;
+  let completeReject: ((error: Error) => void) | null = null;
+
+  const completion = new Promise<void>((resolve, reject) => {
+    completeResolve = resolve;
+    completeReject = reject;
+  });
+
+  const finishSuccess = () => {
+    if (done) return;
+    done = true;
+    completeResolve?.();
+  };
+
+  const finishError = (error: Error) => {
+    if (done) return;
+    done = true;
+    completeReject?.(error);
+  };
+
+  const unlisten = await listen<OllamaLineStreamPayload>(options.eventName, (event) => {
+    const payload = event.payload;
+    if (payload.requestId !== options.requestId) {
+      return;
+    }
+
+    if (typeof payload.error === "string" && payload.error.length > 0) {
+      finishError(new Error(payload.error));
+      return;
+    }
+
+    if (typeof payload.line === "string") {
+      try {
+        options.onLine(payload.line);
+      } catch (err) {
+        finishError(new Error(toErrorMessage(err, "Failed to process Ollama stream line.")));
+        return;
+      }
+    }
+
+    if (payload.done === true) {
+      finishSuccess();
+    }
+  });
 
   try {
-    const res = await ollamaFetch(baseUrl, "/api/tags", {
-      method: "GET",
-      signal: controller.signal,
+    const invokePromise = invoke(options.command, {
+      url: options.url,
+      bodyJson: options.bodyJson,
+      requestId: options.requestId,
+    }).catch((err) => {
+      finishError(new Error(toErrorMessage(err, "Couldn't start Ollama stream.")));
     });
-    clearTimeout(timeout);
 
-    if (!res.ok) {
-      return {
-        ok: false,
-        error: "unknown",
-        message: `Ollama responded with an unexpected status (${res.status}).`,
-      };
-    }
-
-    const data = (await res.json()) as unknown;
-    return { ok: true, value: extractModelNames(data) };
-  } catch (err) {
-    clearTimeout(timeout);
-    if (err instanceof DOMException && err.name === "AbortError") {
-      return {
-        ok: false,
-        error: "timeout",
-        message: "Ollama didn't respond in time. Is it still starting up?",
-      };
-    }
-    return {
-      ok: false,
-      error: "connection_refused",
-      message: "Can't reach Ollama. Make sure Ollama is installed and running on this computer.",
-    };
+    await withTimeout(completion, options.timeoutMs, "Ollama stream timed out.");
+    await invokePromise;
+  } finally {
+    unlisten();
   }
+}
+
+async function fetchTags(baseUrl: string, timeoutMs: number): Promise<OllamaResult<string[]>> {
+  const result = await ollamaFetch(baseUrl, "/api/tags", timeoutMs);
+  if (!result.ok) {
+    return result;
+  }
+  return { ok: true, value: extractModelNames(result.value) };
 }
 
 export async function checkOllamaHealth(options?: {
@@ -185,11 +272,15 @@ export async function listModels(baseUrlOverride?: string): Promise<string[]> {
   return result.value;
 }
 
-export async function downloadAndLaunchOllamaInstaller(options?: {
+export async function getInstallerPath(): Promise<string> {
+  return join(await tempDir(), "OllamaSetup.exe");
+}
+
+export async function downloadOllamaInstaller(options?: {
   onProgress?: (progress: DownloadProgressUpdate) => void;
 }): Promise<OllamaResult<string>> {
   const installerUrl = `${OLLAMA_INSTALLER_BASE_URL}${OLLAMA_INSTALLER_PATH}`;
-  const installerPath = await join(await tempDir(), "OllamaSetup.exe");
+  const installerPath = await getInstallerPath();
 
   try {
     let downloadedBytes = 0;
@@ -238,75 +329,36 @@ export async function downloadAndLaunchOllamaInstaller(options?: {
       indeterminate: false,
     });
 
-    await openPath(installerPath);
     return { ok: true, value: installerPath };
-  } catch {
+  } catch (err) {
     return {
       ok: false,
       error: "unknown",
-      message: "Couldn't download or launch the Ollama installer. Please try again.",
+      message: err instanceof Error ? err.message : "Couldn't download the Ollama installer. Please try again.",
     };
   }
 }
 
-async function pollUntilModelInstalled(
-  baseUrl: string,
-  model: string,
-  onProgress?: (update: PullProgressUpdate) => void,
-): Promise<OllamaResult<void>> {
-  const waitingMessage = "Downloading... this can take several minutes";
-  onProgress?.({
-    status: waitingMessage,
-    completed: null,
-    total: null,
-    percent: 0,
-    indeterminate: true,
-  });
-
-  while (true) {
-    const tagsResult = await fetchTags(baseUrl, 5_000);
-    if (!tagsResult.ok) {
-      return tagsResult;
-    }
-
-    if (tagsResult.value.includes(model)) {
-      onProgress?.({
-        status: "Download complete.",
-        completed: null,
-        total: null,
-        percent: 100,
-        indeterminate: false,
-      });
-      return { ok: true, value: undefined };
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 5_000));
+export async function launchOllamaInstaller(installerPath: string): Promise<OllamaResult<void>> {
+  try {
+    await invoke("launch_ollama_installer", { path: installerPath });
+    return { ok: true, value: undefined };
+  } catch (err) {
+    return {
+      ok: false,
+      error: "unknown",
+      message: err instanceof Error ? err.message : "Couldn't launch the Ollama installer automatically.",
+    };
   }
 }
 
-async function pullModelWithoutStreaming(
-  baseUrl: string,
-  model: string,
-  onProgress?: (update: PullProgressUpdate) => void,
-): Promise<OllamaResult<void>> {
-  const res = await ollamaFetch(baseUrl, "/api/pull", {
-    method: "POST",
-    body: JSON.stringify({
-      name: model,
-      stream: false,
-    }),
-  });
-
-  if (!res.ok) {
-    const errorText = await safeReadError(res);
-    const message =
-      errorText.length > 0
-        ? `Ollama couldn't start the download: ${errorText}`
-        : `Ollama responded with an unexpected status (${res.status}).`;
-    return { ok: false, error: "unknown", message };
+export async function openInstallerFolder(installerPath: string): Promise<void> {
+  try {
+    const dir = installerPath.replace(/[\\/][^\\/]+$/, "");
+    await openPath(dir);
+  } catch {
+    // best-effort
   }
-
-  return pollUntilModelInstalled(baseUrl, model, onProgress);
 }
 
 export async function pullModel(
@@ -317,51 +369,26 @@ export async function pullModel(
   },
 ): Promise<OllamaResult<void>> {
   const baseUrl = options?.baseUrl ?? loadSettings().baseUrl;
+  const requestId = generateRequestId("pull");
+  let latestPercent = 0;
 
   try {
-    const res = await ollamaFetch(baseUrl, "/api/pull", {
-      method: "POST",
-      body: JSON.stringify({
+    await invokeOllamaLineStream({
+      command: "ollama_pull_stream",
+      eventName: "ollama-pull-stream",
+      url: `${normalizeBaseUrl(baseUrl)}/api/pull`,
+      bodyJson: JSON.stringify({
         name: model,
         stream: true,
       }),
-    });
-
-    if (!res.ok) {
-      const errorText = await safeReadError(res);
-      const message =
-        errorText.length > 0
-          ? `Ollama couldn't start the download: ${errorText}`
-          : `Ollama responded with an unexpected status (${res.status}).`;
-      return { ok: false, error: "unknown", message };
-    }
-
-    if (!res.body || typeof res.body.getReader !== "function") {
-      return pullModelWithoutStreaming(baseUrl, model, options?.onProgress);
-    }
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let latestPercent = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-
-      for (const rawLine of lines) {
-        const line = rawLine.trim();
-        if (!line) continue;
-
+      requestId,
+      timeoutMs: requestTimeoutMs,
+      onLine: (line) => {
         const event = parsePullLine(line);
-        if (!event) continue;
+        if (!event) return;
 
         if (typeof event.error === "string" && event.error.length > 0) {
-          return { ok: false, error: "model_error", message: event.error };
+          throw new Error(`MODEL_ERROR:${event.error}`);
         }
 
         const completed = toFiniteNumberOrNull(event.completed);
@@ -377,38 +404,40 @@ export async function pullModel(
           completed,
           total,
           percent: latestPercent,
-          indeterminate: false,
+          indeterminate: completed === null || total === null || total <= 0,
         });
-      }
-    }
+      },
+    });
 
-    const tail = `${buffer}${decoder.decode()}`.trim();
-    if (tail.length > 0) {
-      const event = parsePullLine(tail);
-      if (event) {
-        if (typeof event.error === "string" && event.error.length > 0) {
-          return { ok: false, error: "model_error", message: event.error };
-        }
-        if (event.done === true) {
-          latestPercent = 100;
-        }
-        options?.onProgress?.({
-          status: typeof event.status === "string" ? event.status : "Download complete.",
-          completed: toFiniteNumberOrNull(event.completed),
-          total: toFiniteNumberOrNull(event.total),
-          percent: latestPercent,
-          indeterminate: false,
-        });
-      }
-    }
+    options?.onProgress?.({
+      status: "Download complete.",
+      completed: null,
+      total: null,
+      percent: 100,
+      indeterminate: false,
+    });
 
     return { ok: true, value: undefined };
-  } catch {
-    return {
-      ok: false,
-      error: "connection_refused",
-      message: "Can't reach Ollama. Make sure Ollama is installed and running on this computer.",
-    };
+  } catch (err) {
+    const message = toErrorMessage(err, "Couldn't download model.");
+
+    if (message.startsWith("MODEL_ERROR:")) {
+      return { ok: false, error: "model_error", message: message.replace("MODEL_ERROR:", "") };
+    }
+
+    if (/unexpected status \(404\)|not found/i.test(message)) {
+      return {
+        ok: false,
+        error: "model_missing",
+        message: modelMissingMessage(model),
+      };
+    }
+
+    if (/unexpected status/i.test(message)) {
+      return { ok: false, error: "unknown", message };
+    }
+
+    return classifyConnectionError(message, "Ollama didn't respond in time. Is it still starting up?");
   }
 }
 
@@ -440,52 +469,36 @@ export async function sendChat(messages: ChatRequestMessage[]): Promise<OllamaRe
   }
 
   const settings = loadSettings();
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+  const requestId = generateRequestId("chat");
+  let assistantText = "";
 
   try {
-    const res = await ollamaFetch(settings.baseUrl, "/api/chat", {
-      method: "POST",
-      signal: controller.signal,
-      body: JSON.stringify({
+    await invokeOllamaLineStream({
+      command: "ollama_chat_stream",
+      eventName: "ollama-chat-stream",
+      url: `${normalizeBaseUrl(settings.baseUrl)}/api/chat`,
+      bodyJson: JSON.stringify({
         model: settings.model,
         messages,
-        stream: false,
+        stream: true,
       }),
+      requestId,
+      timeoutMs: requestTimeoutMs,
+      onLine: (line) => {
+        const event = JSON.parse(line) as ChatStreamEvent;
+
+        if (typeof event.error === "string" && event.error.length > 0) {
+          throw new Error(`MODEL_ERROR:${event.error}`);
+        }
+
+        const chunk = event.message?.content;
+        if (typeof chunk === "string") {
+          assistantText += chunk;
+        }
+      },
     });
-    clearTimeout(timeout);
 
-    if (!res.ok) {
-      const errorText = await safeReadError(res);
-      if (res.status === 404 || /not found/i.test(errorText)) {
-        return {
-          ok: false,
-          error: "model_missing",
-          message: modelMissingMessage(settings.model),
-        };
-      }
-
-      return {
-        ok: false,
-        error: "unknown",
-        message: `Ollama responded with an unexpected status (${res.status}).`,
-      };
-    }
-
-    const data = (await res.json()) as {
-      error?: unknown;
-      message?: { content?: unknown };
-    };
-
-    if (typeof data.error === "string" && data.error.length > 0) {
-      return {
-        ok: false,
-        error: "model_error",
-        message: `The model reported an error: ${data.error}`,
-      };
-    }
-
-    if (typeof data.message?.content !== "string" || data.message.content.length === 0) {
+    if (assistantText.length === 0) {
       return {
         ok: false,
         error: "model_error",
@@ -493,20 +506,34 @@ export async function sendChat(messages: ChatRequestMessage[]): Promise<OllamaRe
       };
     }
 
-    return { ok: true, value: data.message.content };
+    return { ok: true, value: assistantText };
   } catch (err) {
-    clearTimeout(timeout);
-    if (err instanceof DOMException && err.name === "AbortError") {
+    const message = toErrorMessage(err, "Couldn't reach Ollama.");
+
+    if (message.startsWith("MODEL_ERROR:")) {
       return {
         ok: false,
-        error: "timeout",
-        message: "The request took too long. The model may be overloaded — try again.",
+        error: "model_error",
+        message: message.replace("MODEL_ERROR:", ""),
       };
     }
-    return {
-      ok: false,
-      error: "connection_refused",
-      message: "Can't reach Ollama. Make sure Ollama is installed and running on this computer.",
-    };
+
+    if (/unexpected status \(404\)|not found/i.test(message)) {
+      return {
+        ok: false,
+        error: "model_missing",
+        message: modelMissingMessage(settings.model),
+      };
+    }
+
+    if (/unexpected status/i.test(message)) {
+      return {
+        ok: false,
+        error: "unknown",
+        message,
+      };
+    }
+
+    return classifyConnectionError(message, "The request took too long. The model may be overloaded — try again.");
   }
 }
