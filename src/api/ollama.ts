@@ -185,11 +185,15 @@ export async function listModels(baseUrlOverride?: string): Promise<string[]> {
   return result.value;
 }
 
-export async function downloadAndLaunchOllamaInstaller(options?: {
+export async function getInstallerPath(): Promise<string> {
+  return join(await tempDir(), "OllamaSetup.exe");
+}
+
+export async function downloadOllamaInstaller(options?: {
   onProgress?: (progress: DownloadProgressUpdate) => void;
 }): Promise<OllamaResult<string>> {
   const installerUrl = `${OLLAMA_INSTALLER_BASE_URL}${OLLAMA_INSTALLER_PATH}`;
-  const installerPath = await join(await tempDir(), "OllamaSetup.exe");
+  const installerPath = await getInstallerPath();
 
   try {
     let downloadedBytes = 0;
@@ -238,14 +242,35 @@ export async function downloadAndLaunchOllamaInstaller(options?: {
       indeterminate: false,
     });
 
-    await openPath(installerPath);
     return { ok: true, value: installerPath };
-  } catch {
+  } catch (err) {
     return {
       ok: false,
       error: "unknown",
-      message: "Couldn't download or launch the Ollama installer. Please try again.",
+      message: err instanceof Error ? err.message : "Couldn't download the Ollama installer. Please try again.",
     };
+  }
+}
+
+export async function launchOllamaInstaller(installerPath: string): Promise<OllamaResult<void>> {
+  try {
+    await invoke("launch_ollama_installer", { path: installerPath });
+    return { ok: true, value: undefined };
+  } catch (err) {
+    return {
+      ok: false,
+      error: "unknown",
+      message: err instanceof Error ? err.message : "Couldn't launch the Ollama installer automatically.",
+    };
+  }
+}
+
+export async function openInstallerFolder(installerPath: string): Promise<void> {
+  try {
+    const dir = installerPath.replace(/[\\/][^\\/]+$/, "");
+    await openPath(dir);
+  } catch {
+    // best-effort
   }
 }
 

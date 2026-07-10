@@ -66,6 +66,14 @@ async fn download_ollama_installer(
     Ok(())
 }
 
+#[tauri::command]
+fn launch_ollama_installer(path: String) -> Result<(), String> {
+    std::process::Command::new(&path)
+        .spawn()
+        .map(|_| ())
+        .map_err(|err| format!("Couldn't launch Ollama installer: {err}"))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -73,7 +81,10 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![download_ollama_installer])
+        .invoke_handler(tauri::generate_handler![
+            download_ollama_installer,
+            launch_ollama_installer
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
