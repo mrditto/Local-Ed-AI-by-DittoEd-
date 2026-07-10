@@ -1,6 +1,7 @@
 import { isConfigured, loadSettings, requestTimeoutMs } from "../config/anythingllm.config";
 import { fetch } from "@tauri-apps/plugin-http";
-import { writeFile } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { join, tempDir } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
 
@@ -42,6 +43,11 @@ interface PullStreamEvent {
   total?: unknown;
   done?: unknown;
   error?: unknown;
+}
+
+interface OllamaDownloadProgressEvent {
+  downloaded?: unknown;
+  total?: unknown;
 }
 
 const NOT_CONFIGURED_MESSAGE =
@@ -182,68 +188,49 @@ export async function listModels(baseUrlOverride?: string): Promise<string[]> {
 export async function downloadAndLaunchOllamaInstaller(options?: {
   onProgress?: (progress: DownloadProgressUpdate) => void;
 }): Promise<OllamaResult<string>> {
+  const installerUrl = `${OLLAMA_INSTALLER_BASE_URL}${OLLAMA_INSTALLER_PATH}`;
+  const installerPath = await join(await tempDir(), "OllamaSetup.exe");
+
   try {
-    const response = await ollamaFetch(OLLAMA_INSTALLER_BASE_URL, OLLAMA_INSTALLER_PATH, {
-      method: "GET",
-    });
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        error: "unknown",
-        message: `Couldn't download the Ollama installer (${response.status}).`,
-      };
-    }
-
-    const totalHeader = response.headers.get("content-length");
-    const total = totalHeader ? Number.parseInt(totalHeader, 10) : Number.NaN;
-    const totalBytes = Number.isFinite(total) && total > 0 ? total : null;
     let downloadedBytes = 0;
+    let totalBytes: number | null = null;
     options?.onProgress?.({
       downloaded: 0,
       total: totalBytes,
       percent: 0,
-      indeterminate: totalBytes === null,
+      indeterminate: true,
     });
 
-    let bytes: Uint8Array;
-    if (response.body && typeof response.body.getReader === "function") {
-      const chunks: Uint8Array[] = [];
-      const reader = response.body.getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (!value) continue;
-        chunks.push(value);
-        downloadedBytes += value.byteLength;
-        options?.onProgress?.({
-          downloaded: downloadedBytes,
-          total: totalBytes,
-          percent: totalBytes ? clampPercent(Math.round((downloadedBytes / totalBytes) * 100)) : 0,
-          indeterminate: totalBytes === null,
-        });
+    const unlisten = await listen<OllamaDownloadProgressEvent>("ollama-download-progress", (event) => {
+      const downloaded = toFiniteNumberOrNull(event.payload.downloaded);
+      const total = toFiniteNumberOrNull(event.payload.total);
+      if (downloaded === null) {
+        return;
       }
 
-      bytes = new Uint8Array(downloadedBytes);
-      let offset = 0;
-      for (const chunk of chunks) {
-        bytes.set(chunk, offset);
-        offset += chunk.byteLength;
-      }
-    } else {
-      const buffer = await response.arrayBuffer();
-      bytes = new Uint8Array(buffer);
-      downloadedBytes = bytes.byteLength;
+      downloadedBytes = downloaded;
+      totalBytes = total !== null && total > 0 ? total : null;
+      const percent =
+        totalBytes === null || totalBytes <= 0
+          ? 0
+          : clampPercent(Math.round((downloadedBytes / totalBytes) * 100));
       options?.onProgress?.({
         downloaded: downloadedBytes,
         total: totalBytes,
-        percent: 100,
-        indeterminate: false,
+        percent,
+        indeterminate: totalBytes === null,
       });
+    });
+
+    try {
+      await invoke("download_ollama_installer", {
+        url: installerUrl,
+        dest: installerPath,
+      });
+    } finally {
+      unlisten();
     }
 
-    const installerPath = await join(await tempDir(), "OllamaSetup.exe");
-    await writeFile(installerPath, bytes);
     options?.onProgress?.({
       downloaded: downloadedBytes,
       total: totalBytes ?? downloadedBytes,
