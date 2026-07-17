@@ -58,7 +58,10 @@ export function isConfigured(): boolean {
   return s.baseUrl.trim().length > 0;
 }
 
-/** Request timeout in ms before we treat a chat call as hung.
+/** Idle timeout in ms: how long we wait without receiving any new stream
+ *  data before treating a chat/pull call as hung. Resets on every chunk,
+ *  so long-but-active generations (e.g. a full IEP with many sections)
+ *  aren't cut off — only a truly stalled connection trips it.
  *  QA on 2026-07-01 measured ~50s for a first response on typical school
  *  hardware (model cold-load + generation), so 60s was too tight. */
 export const requestTimeoutMs = 120_000;

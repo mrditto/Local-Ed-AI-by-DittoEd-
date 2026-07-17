@@ -188,29 +188,53 @@ async function invokeOllamaLineStream(options: {
   let done = false;
   let completeResolve: (() => void) | null = null;
   let completeReject: ((error: Error) => void) | null = null;
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
   const completion = new Promise<void>((resolve, reject) => {
     completeResolve = resolve;
     completeReject = reject;
   });
 
+  const clearIdleTimer = () => {
+    if (idleTimer !== null) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+  };
+
   const finishSuccess = () => {
     if (done) return;
     done = true;
+    clearIdleTimer();
     completeResolve?.();
   };
 
   const finishError = (error: Error) => {
     if (done) return;
     done = true;
+    clearIdleTimer();
     completeReject?.(error);
   };
+
+  // Idle timeout: reset on every line received so long-running-but-active
+  // generations (e.g. a full IEP with many sections) aren't killed by a
+  // fixed wall-clock deadline. Only fires if Ollama stops sending data.
+  const resetIdleTimer = () => {
+    clearIdleTimer();
+    idleTimer = setTimeout(() => {
+      finishError(new Error("Ollama stream timed out."));
+    }, options.timeoutMs);
+  };
+
+  resetIdleTimer();
 
   const unlisten = await listen<OllamaLineStreamPayload>(options.eventName, (event) => {
     const payload = event.payload;
     if (payload.requestId !== options.requestId) {
       return;
     }
+
+    resetIdleTimer();
 
     if (typeof payload.error === "string" && payload.error.length > 0) {
       finishError(new Error(payload.error));
@@ -240,9 +264,10 @@ async function invokeOllamaLineStream(options: {
       finishError(new Error(toErrorMessage(err, "Couldn't start Ollama stream.")));
     });
 
-    await withTimeout(completion, options.timeoutMs, "Ollama stream timed out.");
+    await completion;
     await invokePromise;
   } finally {
+    clearIdleTimer();
     unlisten();
   }
 }
