@@ -805,6 +805,123 @@ body {
   padding-top: 8px;
 }
 
+/* History panel */
+.history-panel {
+  max-width: 960px;
+}
+.history-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.history-chip {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.history-chip:hover {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.history-chip-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+.history-chip-new {
+  border-style: dashed;
+  color: var(--color-primary);
+}
+.history-inline-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.history-inline-edit input,
+.history-inline-edit select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  font-family: inherit;
+  font-size: 0.85rem;
+  background: var(--color-surface);
+}
+.history-project-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.history-empty {
+  margin: 20px 0;
+}
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.history-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.history-card-open {
+  cursor: pointer;
+}
+.history-card-open:hover .history-card-title {
+  color: var(--color-primary-hover);
+}
+.history-card-type {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.history-card-title {
+  margin: 6px 0 4px;
+  font-size: 1.02rem;
+}
+.history-card-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+.history-card-preview {
+  margin: 6px 0 0;
+  font-size: 0.86rem;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.history-card-actions {
+  display: flex;
+  gap: 4px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+.history-card-actions .btn {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+.history-confirm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
 @media print {
   body {
     background: white;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { useChat } from "../hooks/useChat";
-import { checkConnection } from "../api/ollama";
+import { useChat, type ChatMessage } from "../hooks/useChat";
+import { checkConnection, type ChatRequestMessage } from "../api/ollama";
 import { DisclaimerFooter } from "./DisclaimerFooter";
 import { VerifyFooter } from "./VerifyFooter";
 import { Button } from "./ui/Button";
@@ -15,12 +15,16 @@ import {
   toneInstruction,
   type Personalization,
 } from "../config/personalization";
+import { createChatSession, getSessionBody, saveChatTurn } from "../storage/historyStore";
+import type { SessionAttachmentMeta, StoredChatMessage } from "../storage/types";
 
 interface ChatPanelProps {
   prompt: Prompt;
   onBack: () => void;
   initialMessage?: string;
   messagePreamble?: string;
+  surface: "prompt" | "assistant";
+  resumeSessionId?: string;
 }
 
 type ConnectionState = "checking" | "ok" | "error";
@@ -31,8 +35,120 @@ interface PendingAttachment {
   truncated: boolean;
 }
 
-export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: ChatPanelProps) {
-  const { messages, isSending, sendMessage } = useChat();
+interface ChatResumeState {
+  messages: ChatMessage[];
+  outgoingHistory: ChatRequestMessage[];
+}
+
+function deriveOutgoingHistory(messages: ChatMessage[]): ChatRequestMessage[] {
+  const history: ChatRequestMessage[] = [];
+  for (const msg of messages) {
+    if (msg.role === "user") {
+      history.push({ role: "user", content: msg.outgoingContent ?? msg.text });
+    } else if (msg.role === "assistant") {
+      history.push({ role: "assistant", content: msg.text });
+    }
+  }
+  return history;
+}
+
+function deriveChatSessionTitle(prompt: Prompt, messages: ChatMessage[]): string {
+  const firstUser = messages.find((m) => m.role === "user");
+  const trimmed = firstUser?.text.trim() ?? "";
+  if (!trimmed) return prompt.title;
+  const snippet = trimmed.length > 40 ? `${trimmed.slice(0, 40)}…` : trimmed;
+  return `${prompt.title}: ${snippet}`;
+}
+
+/** Loads a resumed session's messages before mounting the chat itself — useChat's initial state is only read once, on mount. */
+export function ChatPanel(props: ChatPanelProps) {
+  const { resumeSessionId, prompt, onBack } = props;
+  const [resumeState, setResumeState] = useState<ChatResumeState | null>(null);
+  const [isLoadingSession, setIsLoadingSession] = useState(Boolean(resumeSessionId));
+
+  useEffect(() => {
+    if (!resumeSessionId) return;
+    let cancelled = false;
+    (async () => {
+      const record = await getSessionBody(resumeSessionId);
+      if (cancelled) return;
+      if (record && record.type === "chat") {
+        setResumeState({
+          messages: record.messages,
+          outgoingHistory: deriveOutgoingHistory(record.messages),
+        });
+      }
+      setIsLoadingSession(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [resumeSessionId]);
+
+  if (isLoadingSession) {
+    return (
+      <div className="chat-panel">
+        <header className="chat-panel-header">
+          <Button variant="ghost" onClick={onBack}>
+            ← Back to library
+          </Button>
+          <h2>{prompt.title}</h2>
+        </header>
+        <Spinner label="Loading chat…" />
+      </div>
+    );
+  }
+
+  return (
+    <ChatPanelBody
+      {...props}
+      initialSessionId={resumeSessionId ?? null}
+      initialState={resumeState ?? undefined}
+    />
+  );
+}
+
+interface ChatPanelBodyProps extends ChatPanelProps {
+  initialSessionId: string | null;
+  initialState?: ChatResumeState;
+}
+
+function ChatPanelBody({
+  prompt,
+  onBack,
+  initialMessage,
+  messagePreamble,
+  surface,
+  initialSessionId,
+  initialState,
+}: ChatPanelBodyProps) {
+  const sessionIdRef = useRef<string | null>(initialSessionId);
+
+  const handleTurnComplete = useCallback(
+    (turnMessages: ChatMessage[]) => {
+      const storedMessages: StoredChatMessage[] = turnMessages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        text: m.text,
+        createdAt: m.createdAt,
+        attachment: m.attachment,
+        outgoingContent: m.outgoingContent,
+      }));
+      void (async () => {
+        if (!sessionIdRef.current) {
+          sessionIdRef.current = await createChatSession({
+            title: deriveChatSessionTitle(prompt, turnMessages),
+            promptId: surface === "assistant" ? null : prompt.id,
+            surface,
+          });
+        }
+        await saveChatTurn(sessionIdRef.current, { messages: storedMessages });
+      })();
+    },
+    [prompt, surface],
+  );
+
+  const { messages, isSending, sendMessage } = useChat({ initialState, onTurnComplete: handleTurnComplete });
   const [personalization] = useState(() => loadPersonalization());
   const [draft, setDraft] = useState(initialMessage ? "" : prompt.template);
   const [tone, setTone] = useState<Personalization["tone"]>(personalization.tone);
@@ -44,7 +160,7 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const hasSentInitialMessage = useRef(false);
-  const hasSentFirstSessionMessage = useRef(false);
+  const hasSentFirstSessionMessage = useRef(messages.length > 0);
   const lastAppliedTone = useRef<Personalization["tone"] | null>(null);
   const lastAppliedLength = useRef<Personalization["length"] | null>(null);
 
@@ -69,7 +185,7 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
   }, [messages]);
 
   const sendWithPreamble = useCallback(
-    (text: string, attachmentPrefix?: string) => {
+    (text: string, attachmentPrefix?: string, attachmentMeta?: SessionAttachmentMeta) => {
       const isFirstSessionMessage = !hasSentFirstSessionMessage.current;
       hasSentFirstSessionMessage.current = true;
       const hiddenPrefixParts: string[] = [];
@@ -104,10 +220,11 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
         hiddenPrefixParts.push(attachmentPrefix);
       }
       const hiddenPrefix = hiddenPrefixParts.join("");
-      if (hiddenPrefix.length > 0) {
-        return sendMessage(text, { hiddenPrefix });
-      }
-      return sendMessage(text);
+      const sendOptions = {
+        ...(hiddenPrefix.length > 0 ? { hiddenPrefix } : {}),
+        ...(attachmentMeta ? { attachment: attachmentMeta } : {}),
+      };
+      return sendMessage(text, sendOptions);
     },
     [length, messagePreamble, personalization, sendMessage, tone],
   );
@@ -127,8 +244,11 @@ export function ChatPanel({ prompt, onBack, initialMessage, messagePreamble }: C
     const attachmentPrefix = attachment
       ? `Attached document "${attachment.fileName}":\n---\n${attachment.text}\n---\n\n`
       : undefined;
+    const attachmentMeta: SessionAttachmentMeta | undefined = attachment
+      ? { fileName: attachment.fileName, charCount: attachment.text.length, truncated: attachment.truncated }
+      : undefined;
     setDraft("");
-    await sendWithPreamble(text, attachmentPrefix);
+    await sendWithPreamble(text, attachmentPrefix, attachmentMeta);
     setAttachment(null);
     setAttachmentError("");
   }

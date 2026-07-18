@@ -5,9 +5,10 @@ import { PromptWizard } from "./components/PromptWizard";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { PersonalizePanel } from "./components/PersonalizePanel";
 import { IepFormAssistant } from "./components/IepFormAssistant";
+import { HistoryPanel } from "./components/HistoryPanel";
 import { loadSettings, saveSettings } from "./config/anythingllm.config";
 import { Button } from "./components/ui/Button";
-import { prompts, type Prompt } from "./prompts";
+import { prompts, getPromptById, type Prompt } from "./prompts";
 import { buildAssistantPreamble } from "./prompts/assistantPreamble";
 import { modelTiers } from "./data/modelTiers";
 import {
@@ -19,6 +20,8 @@ import {
   pullModel,
   type PullProgressUpdate,
 } from "./api/ollama";
+import { initHistoryStore } from "./storage/historyStore";
+import type { SessionSummary } from "./storage/types";
 import { Spinner } from "./components/ui/Spinner";
 
 type View =
@@ -28,7 +31,8 @@ type View =
   | "assistant"
   | "settings"
   | "personalize"
-  | "iep-assistant";
+  | "iep-assistant"
+  | "history";
 
 type SetupStage = "checking" | "ollama" | "model" | "ready";
 
@@ -57,6 +61,8 @@ const ASSISTANT_PROMPT: Prompt = {
 function App() {
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
   const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
+  const [resumeSessionId, setResumeSessionId] = useState<string | undefined>(undefined);
+  const [isHistoryReady, setIsHistoryReady] = useState(false);
   const assistantPreamble = buildAssistantPreamble(prompts);
   const [view, setView] = useState<View>("library");
   const [setupStage, setSetupStage] = useState<SetupStage>("checking");
@@ -119,6 +125,10 @@ function App() {
   useEffect(() => {
     void evaluateLaunchGate(false);
   }, [evaluateLaunchGate]);
+
+  useEffect(() => {
+    void initHistoryStore().then(() => setIsHistoryReady(true));
+  }, []);
 
   useEffect(() => {
     if (!isPollingOllamaStartup) return;
@@ -254,29 +264,52 @@ function App() {
   function openPrompt(prompt: Prompt) {
     setActivePrompt(prompt);
     setInitialMessage(undefined);
+    setResumeSessionId(undefined);
     setView(prompt.fields && prompt.fields.length > 0 ? "wizard" : "chat");
   }
 
   function openChatFromWizard(message: string) {
     setInitialMessage(message);
+    setResumeSessionId(undefined);
     setView("chat");
   }
 
   function openAssistant() {
     setActivePrompt(ASSISTANT_PROMPT);
     setInitialMessage(undefined);
+    setResumeSessionId(undefined);
     setView("assistant");
   }
 
   function openIepAssistant() {
     setActivePrompt(null);
     setInitialMessage(undefined);
+    setResumeSessionId(undefined);
     setView("iep-assistant");
+  }
+
+  function resumeSession(summary: SessionSummary) {
+    if (summary.type === "iep") {
+      setActivePrompt(null);
+      setInitialMessage(undefined);
+      setResumeSessionId(summary.id);
+      setView("iep-assistant");
+      return;
+    }
+
+    const isAssistant = summary.surface === "assistant";
+    const promptForSession =
+      (!isAssistant && summary.promptId ? getPromptById(summary.promptId) : undefined) ?? ASSISTANT_PROMPT;
+    setActivePrompt(promptForSession);
+    setInitialMessage(undefined);
+    setResumeSessionId(summary.id);
+    setView(isAssistant ? "assistant" : "chat");
   }
 
   function backToLibrary() {
     setActivePrompt(null);
     setInitialMessage(undefined);
+    setResumeSessionId(undefined);
     setView("library");
   }
 
@@ -486,6 +519,9 @@ function App() {
 
       {!showSetupFlow && view !== "settings" && view !== "personalize" && (
         <div className="app-toolbar">
+          <Button variant="ghost" onClick={() => setView("history")}>
+            History
+          </Button>
           <Button variant="ghost" onClick={() => setView("personalize")}>
             Personalize
           </Button>
@@ -497,11 +533,21 @@ function App() {
 
       {!showSetupFlow && view === "settings" && <SettingsPanel onDone={backToLibrary} />}
       {!showSetupFlow && view === "personalize" && <PersonalizePanel onDone={backToLibrary} />}
+      {!showSetupFlow && view === "history" && isHistoryReady && (
+        <HistoryPanel onBack={backToLibrary} onResumeSession={resumeSession} />
+      )}
+      {!showSetupFlow && view === "history" && !isHistoryReady && <Spinner label="Loading history…" />}
       {!showSetupFlow && view === "wizard" && activePrompt && (
         <PromptWizard prompt={activePrompt} onBack={backToLibrary} onGenerate={openChatFromWizard} />
       )}
       {!showSetupFlow && view === "chat" && activePrompt && (
-        <ChatPanel prompt={activePrompt} onBack={backToLibrary} initialMessage={initialMessage} />
+        <ChatPanel
+          prompt={activePrompt}
+          onBack={backToLibrary}
+          initialMessage={initialMessage}
+          surface="prompt"
+          resumeSessionId={resumeSessionId}
+        />
       )}
       {!showSetupFlow && view === "assistant" && activePrompt && (
         <ChatPanel
@@ -509,9 +555,13 @@ function App() {
           onBack={backToLibrary}
           initialMessage={initialMessage}
           messagePreamble={assistantPreamble}
+          surface="assistant"
+          resumeSessionId={resumeSessionId}
         />
       )}
-      {!showSetupFlow && view === "iep-assistant" && <IepFormAssistant onBack={backToLibrary} />}
+      {!showSetupFlow && view === "iep-assistant" && (
+        <IepFormAssistant onBack={backToLibrary} resumeSessionId={resumeSessionId} />
+      )}
       {!showSetupFlow && view === "library" && (
         <PromptLibrary
           onSelectPrompt={openPrompt}

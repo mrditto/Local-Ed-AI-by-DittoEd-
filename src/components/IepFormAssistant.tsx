@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlignmentType,
   Document,
@@ -12,6 +12,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { sendChat } from "../api/ollama";
 import { Button } from "./ui/Button";
+import { Spinner } from "./ui/Spinner";
 import {
   IEP_TEAM_DETERMINATIONS_LABEL,
   SPED_HIDDEN_PREFIX_GUARDRAIL,
@@ -19,66 +20,28 @@ import {
   type MdIepField,
   type MdIepSectionSchema,
 } from "../data/mdIepFormSchema";
+import {
+  buildEmptyItem,
+  buildEmptyRepeatableItems,
+  buildInitialDraft,
+  deriveIepSessionTitle,
+  getDefaultValue,
+  iepAnswerCount,
+  sectionHasAnswers,
+  stringifyValue,
+  type FieldValue,
+  type IepDraftState,
+  type SectionValues,
+} from "../data/iepDraft";
+import { createIepSession, getSessionBody, saveIepDraft } from "../storage/historyStore";
 
 interface IepFormAssistantProps {
   onBack: () => void;
+  resumeSessionId?: string;
 }
 
-type FieldValue = string | boolean;
-type SectionValues = Record<string, FieldValue>;
-
-interface IepDraftState {
-  version: 1;
-  sections: Record<string, SectionValues>;
-  repeatableSections: Record<string, SectionValues[]>;
-  skippedSectionIds: string[];
-}
-
-const STORAGE_KEY = "educatorllm-iep-form-draft";
 const DRAFT_FOOTER_TEXT =
   "DRAFT - generated with Local Ed AI. Requires review and approval by the full IEP team. Not an eligibility, placement, or disciplinary determination.";
-
-function getDefaultValue(field: MdIepField): FieldValue {
-  if (field.kind === "deterministic" && field.inputType === "checkbox") {
-    return false;
-  }
-  return "";
-}
-
-function buildEmptyItem(section: MdIepSectionSchema): SectionValues {
-  const item: SectionValues = {};
-  section.fields.forEach((field) => {
-    item[field.id] = getDefaultValue(field);
-    if (field.kind === "narrative") {
-      item[`${field.id}__seed`] = "";
-    }
-  });
-  return item;
-}
-
-function buildEmptyRepeatableItems(section: MdIepSectionSchema): SectionValues[] {
-  return Array.from({ length: Math.max(1, section.repeatable?.minItems ?? 1) }, () => buildEmptyItem(section));
-}
-
-function buildInitialDraft(): IepDraftState {
-  const sections: Record<string, SectionValues> = {};
-  const repeatableSections: Record<string, SectionValues[]> = {};
-
-  mdIepFormSections.forEach((section) => {
-    if (section.repeatable) {
-      repeatableSections[section.id] = buildEmptyRepeatableItems(section);
-      return;
-    }
-    sections[section.id] = buildEmptyItem(section);
-  });
-
-  return {
-    version: 1,
-    sections,
-    repeatableSections,
-    skippedSectionIds: [],
-  };
-}
 
 function computeAge(dateOfBirth: string, fallbackAgeText: string): number | null {
   if (dateOfBirth) {
@@ -96,68 +59,61 @@ function computeAge(dateOfBirth: string, fallbackAgeText: string): number | null
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function readDraftFromStorage(): IepDraftState {
-  const initial = buildInitialDraft();
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return initial;
-    const parsed = JSON.parse(raw) as Partial<IepDraftState>;
-    if (!parsed || typeof parsed !== "object") return initial;
-
-    const merged: IepDraftState = {
-      ...initial,
-      sections: { ...initial.sections, ...(parsed.sections ?? {}) },
-      repeatableSections: { ...initial.repeatableSections, ...(parsed.repeatableSections ?? {}) },
-      skippedSectionIds: Array.isArray(parsed.skippedSectionIds) ? parsed.skippedSectionIds : [],
-    };
-
-    return merged;
-  } catch {
-    return initial;
-  }
-}
-
-function stringifyValue(value: FieldValue): string {
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  return value.trim();
-}
-
-function hasValue(value: FieldValue | undefined): boolean {
-  if (typeof value === "boolean") return value;
-  return Boolean(value?.trim());
-}
-
-function sectionHasAnswers(draft: IepDraftState, activeSection: MdIepSectionSchema): boolean {
-  const itemHasAnswers = (values: SectionValues | undefined) =>
-    activeSection.fields.some((field) => {
-      if (hasValue(values?.[field.id])) {
-        return true;
-      }
-      if (field.kind === "narrative" && hasValue(values?.[`${field.id}__seed`])) {
-        return true;
-      }
-      return false;
-    });
-
-  if (activeSection.repeatable) {
-    return (draft.repeatableSections[activeSection.id] ?? []).some((item) => itemHasAnswers(item));
-  }
-
-  return itemHasAnswers(draft.sections[activeSection.id]);
-}
-
 function isTauriRuntime(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
-export function IepFormAssistant({ onBack }: IepFormAssistantProps) {
-  const [draft, setDraft] = useState<IepDraftState>(() => readDraftFromStorage());
+export function IepFormAssistant({ onBack, resumeSessionId }: IepFormAssistantProps) {
+  const [draft, setDraft] = useState<IepDraftState>(() => buildInitialDraft());
   const [currentStep, setCurrentStep] = useState(0);
+  const [isLoadingSession, setIsLoadingSession] = useState(Boolean(resumeSessionId));
   const [isPrinting, setIsPrinting] = useState(false);
   const [draftingKey, setDraftingKey] = useState<string | null>(null);
   const [draftError, setDraftError] = useState<string>("");
   const [exportMessage, setExportMessage] = useState<string>("");
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+  const sessionIdRef = useRef<string | null>(resumeSessionId ?? null);
+
+  useEffect(() => {
+    if (!resumeSessionId) return;
+    let cancelled = false;
+    (async () => {
+      const record = await getSessionBody(resumeSessionId);
+      if (cancelled) return;
+      if (record && record.type === "iep") {
+        setDraft(record.draft);
+        setCurrentStep(record.currentStep);
+      }
+      setIsLoadingSession(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [resumeSessionId]);
+
+  // Autosave: lazily creates the session on the first field edit that
+  // actually has an answer, so abandoned/empty drafts never litter History.
+  useEffect(() => {
+    if (isLoadingSession) return;
+    if (!sessionIdRef.current && iepAnswerCount(draft) === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      if (!sessionIdRef.current) {
+        sessionIdRef.current = await createIepSession({ title: deriveIepSessionTitle(draft) });
+      }
+      if (cancelled || !sessionIdRef.current) return;
+      await saveIepDraft(sessionIdRef.current, {
+        draft,
+        currentStep,
+        title: deriveIepSessionTitle(draft),
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draft, currentStep, isLoadingSession]);
 
   const studentSectionValues = draft.sections["student-school-information"] ?? {};
   const computedAge = computeAge(
@@ -181,10 +137,6 @@ export function IepFormAssistant({ onBack }: IepFormAssistantProps) {
       setCurrentStep(visibleSections.length);
     }
   }, [currentStep, visibleSections.length]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-  }, [draft]);
 
   useEffect(() => {
     const handleAfterPrint = () => setIsPrinting(false);
@@ -588,6 +540,20 @@ export function IepFormAssistant({ onBack }: IepFormAssistantProps) {
     window.setTimeout(() => {
       window.print();
     }, 40);
+  }
+
+  if (isLoadingSession) {
+    return (
+      <div className="iep-assistant-panel">
+        <header className="wizard-header">
+          <Button variant="ghost" onClick={onBack}>
+            ← Back to library
+          </Button>
+          <h2>IEP Form Assistant</h2>
+        </header>
+        <Spinner label="Loading draft…" />
+      </div>
+    );
   }
 
   return (
