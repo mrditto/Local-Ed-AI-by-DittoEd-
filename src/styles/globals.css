@@ -213,6 +213,28 @@ body {
   margin: 0;
   font-size: 1.1rem;
 }
+.chat-panel-new-chat {
+  margin-left: auto;
+}
+.chat-library-picker {
+  margin-top: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--color-surface);
+}
+.chat-library-picker-item {
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+.chat-library-picker-item:hover {
+  text-decoration: underline;
+}
 .chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -920,6 +942,33 @@ body {
   border-top: 1px solid var(--color-border);
   padding-top: 8px;
   margin-top: 4px;
+}
+.history-search-field {
+  max-width: 360px;
+  margin-bottom: 12px;
+}
+.history-saved-files {
+  margin-top: 20px;
+}
+.history-saved-files-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.history-saved-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+.history-saved-file-row:last-child {
+  border-bottom: none;
 }
 
 @media print {

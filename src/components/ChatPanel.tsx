@@ -15,8 +15,8 @@ import {
   toneInstruction,
   type Personalization,
 } from "../config/personalization";
-import { createChatSession, getSessionBody, saveChatTurn } from "../storage/historyStore";
-import type { SessionAttachmentMeta, StoredChatMessage } from "../storage/types";
+import { createChatSession, getSessionBody, listSavedFiles, saveChatTurn, saveFileToLibrary } from "../storage/historyStore";
+import type { SavedFile, SessionAttachmentMeta, StoredChatMessage } from "../storage/types";
 
 interface ChatPanelProps {
   prompt: Prompt;
@@ -148,7 +148,7 @@ function ChatPanelBody({
     [prompt, surface],
   );
 
-  const { messages, isSending, sendMessage } = useChat({ initialState, onTurnComplete: handleTurnComplete });
+  const { messages, isSending, sendMessage, reset } = useChat({ initialState, onTurnComplete: handleTurnComplete });
   const [personalization] = useState(() => loadPersonalization());
   const [draft, setDraft] = useState(initialMessage ? "" : prompt.template);
   const [tone, setTone] = useState<Personalization["tone"]>(personalization.tone);
@@ -157,6 +157,8 @@ function ChatPanelBody({
   const [connectionMessage, setConnectionMessage] = useState<string>("");
   const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
   const [attachmentError, setAttachmentError] = useState<string>("");
+  const [showLibraryPicker, setShowLibraryPicker] = useState(false);
+  const [libraryFiles, setLibraryFiles] = useState<SavedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const hasSentInitialMessage = useRef(false);
@@ -255,6 +257,7 @@ function ChatPanelBody({
 
   function handleAttachClick() {
     setAttachmentError("");
+    setShowLibraryPicker(false);
     fileInputRef.current?.click();
   }
 
@@ -276,6 +279,32 @@ function ChatPanelBody({
       truncated: result.truncated,
     });
     setAttachmentError("");
+    void saveFileToLibrary({ fileName: file.name, text: result.text, truncated: result.truncated });
+  }
+
+  async function handleOpenLibraryPicker() {
+    setAttachmentError("");
+    const files = await listSavedFiles();
+    setLibraryFiles(files);
+    setShowLibraryPicker((prev) => !prev);
+  }
+
+  function handlePickFromLibrary(file: SavedFile) {
+    setAttachment({ fileName: file.fileName, text: file.text, truncated: file.truncated });
+    setShowLibraryPicker(false);
+  }
+
+  function handleNewChat() {
+    reset();
+    sessionIdRef.current = null;
+    setDraft(prompt.template);
+    setAttachment(null);
+    setAttachmentError("");
+    setShowLibraryPicker(false);
+    hasSentFirstSessionMessage.current = false;
+    hasSentInitialMessage.current = true;
+    lastAppliedTone.current = null;
+    lastAppliedLength.current = null;
   }
 
   return (
@@ -285,6 +314,9 @@ function ChatPanelBody({
           ← Back to library
         </Button>
         <h2>{prompt.title}</h2>
+        <Button variant="ghost" className="chat-panel-new-chat" onClick={handleNewChat} disabled={isSending}>
+          + New chat
+        </Button>
       </header>
 
       {connectionState === "checking" && <Spinner label="Checking Ollama connection…" />}
@@ -374,6 +406,27 @@ function ChatPanelBody({
             Google Doc? Use File → Download → Microsoft Word (.docx), then attach it here.
           </div>
           {attachmentError && <div className="attachment-error">{attachmentError}</div>}
+          {showLibraryPicker && (
+            <div className="chat-library-picker">
+              {libraryFiles.length === 0 ? (
+                <p className="settings-hint">No saved files yet — attach a file to add one.</p>
+              ) : (
+                <ul className="history-saved-files-list">
+                  {libraryFiles.map((file) => (
+                    <li key={file.id} className="history-saved-file-row">
+                      <button
+                        type="button"
+                        className="chat-library-picker-item"
+                        onClick={() => handlePickFromLibrary(file)}
+                      >
+                        {file.fileName}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
         <div className="chat-input-actions">
           <input
@@ -391,6 +444,14 @@ function ChatPanelBody({
             disabled={connectionState !== "ok" || isSending}
           >
             📎 Attach
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void handleOpenLibraryPicker()}
+            disabled={connectionState !== "ok" || isSending}
+          >
+            From library
           </Button>
           <Button type="submit" disabled={connectionState !== "ok" || isSending || !draft.trim()}>
             Send

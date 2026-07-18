@@ -1,18 +1,22 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
 import { Spinner } from "./ui/Spinner";
 import {
   createProject,
   deleteProject,
+  deleteSavedFile,
   deleteSession,
   listProjects,
+  listSavedFiles,
   listSessionSummaries,
   moveSessionToProject,
   renameProject,
   renameSession,
+  searchSessions,
+  setSessionPinned,
 } from "../storage/historyStore";
-import type { Project, SessionSummary } from "../storage/types";
+import type { Project, SavedFile, SessionSummary } from "../storage/types";
 
 interface HistoryPanelProps {
   onBack: () => void;
@@ -29,6 +33,8 @@ const TYPE_LABEL: Record<SessionSummary["type"], string> = {
   iep: "IEP draft",
 };
 
+const SEARCH_DEBOUNCE_MS = 250;
+
 function formatRelativeTime(ms: number): string {
   const diff = Date.now() - ms;
   const minute = 60_000;
@@ -41,11 +47,17 @@ function formatRelativeTime(ms: number): string {
   return new Date(ms).toLocaleDateString();
 }
 
+function formatBytes(chars: number): string {
+  return chars < 1000 ? `${chars} chars` : `${(chars / 1000).toFixed(1)}k chars`;
+}
+
 export function HistoryPanel({ onBack, onResumeSession }: HistoryPanelProps) {
-  const [summaries, setSummaries] = useState<SessionSummary[]>([]);
+  const [allSummaries, setAllSummaries] = useState<SessionSummary[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [savedFiles, setSavedFiles] = useState<SavedFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<"all" | "uncategorized" | string>("all");
+  const [searchInput, setSearchInput] = useState("");
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
@@ -55,18 +67,35 @@ export function HistoryPanel({ onBack, onResumeSession }: HistoryPanelProps) {
   const [movingSessionId, setMovingSessionId] = useState<string | null>(null);
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    const [nextSummaries, nextProjects] = await Promise.all([listSessionSummaries(), listProjects()]);
-    setSummaries(nextSummaries);
+  const refresh = useCallback(async (query: string) => {
+    const trimmed = query.trim();
+    const [nextSummaries, nextProjects, nextFiles] = await Promise.all([
+      trimmed ? searchSessions(trimmed) : listSessionSummaries(),
+      listProjects(),
+      listSavedFiles(),
+    ]);
+    setAllSummaries(nextSummaries);
     setProjects(nextProjects);
+    setSavedFiles(nextFiles);
     setIsLoading(false);
   }, []);
 
+  // Loads immediately on mount; debounces subsequent search-as-you-type so
+  // IndexedDB isn't re-queried on every keystroke.
+  const isFirstRun = useRef(true);
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      void refresh(searchInput);
+      return;
+    }
+    const timer = setTimeout(() => {
+      void refresh(searchInput);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchInput, refresh]);
 
-  const visibleSummaries = summaries.filter((s) => {
+  const visibleSummaries = allSummaries.filter((s) => {
     if (activeFilter === "all") return true;
     if (activeFilter === "uncategorized") return s.projectId === null;
     return s.projectId === activeFilter;
@@ -81,39 +110,49 @@ export function HistoryPanel({ onBack, onResumeSession }: HistoryPanelProps) {
     if (!name) return;
     const id = await createProject(name);
     setActiveFilter(id);
-    await refresh();
+    await refresh(searchInput);
   }
 
   async function handleRenameProject(id: string) {
     const name = projectNameDraft.trim();
     setRenamingProjectId(null);
     if (name) await renameProject(id, name);
-    await refresh();
+    await refresh(searchInput);
   }
 
   async function handleDeleteProject(id: string) {
     await deleteProject(id);
     if (activeFilter === id) setActiveFilter("all");
-    await refresh();
+    await refresh(searchInput);
   }
 
   async function handleRenameSession(id: string) {
     const title = sessionTitleDraft.trim();
     setRenamingSessionId(null);
     if (title) await renameSession(id, title);
-    await refresh();
+    await refresh(searchInput);
+  }
+
+  async function handleTogglePin(summary: SessionSummary) {
+    await setSessionPinned(summary.id, !summary.pinned);
+    await refresh(searchInput);
   }
 
   async function handleMoveSession(id: string, projectId: string) {
     await moveSessionToProject(id, projectId === "" ? null : projectId);
     setMovingSessionId(null);
-    await refresh();
+    await refresh(searchInput);
   }
 
   async function handleDeleteSession(id: string) {
     await deleteSession(id);
     setConfirmDeleteSessionId(null);
-    await refresh();
+    await refresh(searchInput);
+  }
+
+  async function handleDeleteSavedFile(id: string) {
+    await deleteSavedFile(id);
+    await refresh(searchInput);
   }
 
   return (
@@ -124,6 +163,15 @@ export function HistoryPanel({ onBack, onResumeSession }: HistoryPanelProps) {
         </Button>
         <h2>History</h2>
       </header>
+
+      <div className="settings-field history-search-field">
+        <input
+          type="search"
+          value={searchInput}
+          placeholder="Search chats and IEP drafts…"
+          onChange={(e) => setSearchInput(e.currentTarget.value)}
+        />
+      </div>
 
       <div className="history-chip-row">
         <button
@@ -219,7 +267,9 @@ export function HistoryPanel({ onBack, onResumeSession }: HistoryPanelProps) {
 
       {!isLoading && visibleSummaries.length === 0 && (
         <p className="settings-hint history-empty">
-          Nothing here yet. Chats and IEP drafts you start will be saved automatically.
+          {searchInput.trim()
+            ? "No chats or IEP drafts match that search."
+            : "Nothing here yet. Chats and IEP drafts you start will be saved automatically."}
         </p>
       )}
 
@@ -239,6 +289,7 @@ export function HistoryPanel({ onBack, onResumeSession }: HistoryPanelProps) {
               }}
             >
               <span className="history-card-type">
+                {summary.pinned ? "★ " : ""}
                 {TYPE_ICON[summary.type]} {TYPE_LABEL[summary.type]}
               </span>
               <h3 className="history-card-title">{summary.title}</h3>
@@ -294,6 +345,9 @@ export function HistoryPanel({ onBack, onResumeSession }: HistoryPanelProps) {
               </div>
             ) : (
               <div className="history-card-actions">
+                <Button type="button" variant="ghost" onClick={() => void handleTogglePin(summary)}>
+                  {summary.pinned ? "Unpin" : "Pin"}
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
@@ -315,6 +369,25 @@ export function HistoryPanel({ onBack, onResumeSession }: HistoryPanelProps) {
           </Card>
         ))}
       </div>
+
+      {savedFiles.length > 0 && (
+        <details className="settings-advanced history-saved-files">
+          <summary>Saved files ({savedFiles.length})</summary>
+          <ul className="history-saved-files-list">
+            {savedFiles.map((file) => (
+              <li key={file.id} className="history-saved-file-row">
+                <span>
+                  {file.fileName}
+                  <span className="settings-hint"> — {formatBytes(file.text.length)}</span>
+                </span>
+                <Button type="button" variant="ghost" onClick={() => void handleDeleteSavedFile(file.id)}>
+                  Delete
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }

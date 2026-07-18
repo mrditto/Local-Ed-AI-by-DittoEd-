@@ -59,6 +59,7 @@ export interface SessionSummary {
   updatedAt: number;
   itemCount: number;
   preview?: string;
+  pinned: boolean;
   /** Chat sessions only — lets "resume" route without fetching the full body. */
   promptId?: string | null;
   surface?: "prompt" | "assistant";
@@ -69,4 +70,13 @@ export interface Project {
   name: string;
   createdAt: number;
   updatedAt: number;
+}
+
+/** A reusable attachment a teacher has uploaded before, so it can be re-attached without re-uploading. */
+export interface SavedFile {
+  id: string;
+  fileName: string;
+  text: string;
+  truncated: boolean;
+  addedAt: number;
 }

@@ -10,6 +10,7 @@ import type {
   ChatSessionRecord,
   IepSessionRecord,
   Project,
+  SavedFile,
   SessionRecord,
   SessionSummary,
   SessionType,
@@ -17,15 +18,17 @@ import type {
 } from "./types";
 
 const DB_NAME = "educatorllm-history";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const DEBOUNCE_MS = 400;
 const PREVIEW_MAX_CHARS = 120;
 const LEGACY_MIGRATION_MARKER_KEY = "educatorllm-iep-migration-done";
+const MAX_SAVED_FILES = 50;
 
 interface HistoryDBSchema extends DBSchema {
   sessionSummaries: { key: string; value: SessionSummary };
   sessionBodies: { key: string; value: SessionRecord };
   projects: { key: string; value: Project };
+  savedFiles: { key: string; value: SavedFile };
 }
 
 function newId(): string {
@@ -35,6 +38,11 @@ function newId(): string {
 function truncate(text: string, max: number): string {
   const trimmed = text.trim();
   return trimmed.length > max ? `${trimmed.slice(0, max)}…` : trimmed;
+}
+
+/** Pinned sessions first, then most-recently-updated. */
+function sortSummaries(summaries: SessionSummary[]): SessionSummary[] {
+  return summaries.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt - a.updatedAt);
 }
 
 let dbPromise: Promise<IDBPDatabase<HistoryDBSchema>> | null = null;
@@ -51,6 +59,9 @@ function getDb(): Promise<IDBPDatabase<HistoryDBSchema>> {
         }
         if (!db.objectStoreNames.contains("projects")) {
           db.createObjectStore("projects", { keyPath: "id" });
+        }
+        if (!db.objectStoreNames.contains("savedFiles")) {
+          db.createObjectStore("savedFiles", { keyPath: "id" });
         }
       },
     });
@@ -106,6 +117,7 @@ async function writeChatTurnNow(id: string, patch: { messages: StoredChatMessage
     updatedAt: now,
     itemCount: patch.messages.length,
     preview: lastMessage ? truncate(lastMessage.text, PREVIEW_MAX_CHARS) : undefined,
+    pinned: existingSummary?.pinned ?? false,
     promptId: nextBody.promptId,
     surface: nextBody.surface,
   };
@@ -151,6 +163,7 @@ async function writeIepDraftNow(
     updatedAt: now,
     itemCount: answered,
     preview: `${answered} section${answered === 1 ? "" : "s"} answered`,
+    pinned: existingSummary?.pinned ?? false,
   };
   await summaryStore.put(nextSummary);
 
@@ -198,7 +211,42 @@ export async function listSessionSummaries(filter?: {
   if (filter?.type) {
     all = all.filter((s) => s.type === filter.type);
   }
-  return all.sort((a, b) => b.updatedAt - a.updatedAt);
+  return sortSummaries(all);
+}
+
+/**
+ * Full-text search across session titles/previews and full message/draft
+ * content. Reads all session bodies in one bulk query — fine at the scale
+ * of one teacher's personal history, and only runs on-demand (not on every
+ * render), so it doesn't compromise the "don't load everything at startup"
+ * goal the summary/body split exists for.
+ */
+export async function searchSessions(query: string): Promise<SessionSummary[]> {
+  const q = query.trim().toLowerCase();
+  if (!q) return listSessionSummaries();
+
+  const db = await getDb();
+  const [summaries, bodies] = await Promise.all([db.getAll("sessionSummaries"), db.getAll("sessionBodies")]);
+  const bodyById = new Map(bodies.map((b) => [b.id, b]));
+
+  const matches = summaries.filter((s) => {
+    if (s.title.toLowerCase().includes(q)) return true;
+    if (s.preview?.toLowerCase().includes(q)) return true;
+
+    const body = bodyById.get(s.id);
+    if (!body) return false;
+
+    if (body.type === "chat") {
+      return body.messages.some((m) => m.role !== "error" && m.text.toLowerCase().includes(q));
+    }
+
+    const sections = [...Object.values(body.draft.sections), ...Object.values(body.draft.repeatableSections).flat()];
+    return sections.some((values) =>
+      Object.values(values).some((value) => typeof value === "string" && value.toLowerCase().includes(q)),
+    );
+  });
+
+  return sortSummaries(matches);
 }
 
 export async function getSessionBody(id: string): Promise<SessionRecord | null> {
@@ -236,6 +284,7 @@ export async function createChatSession(init: {
     createdAt: now,
     updatedAt: now,
     itemCount: 0,
+    pinned: false,
     promptId: init.promptId,
     surface: init.surface,
   };
@@ -278,6 +327,7 @@ export async function createIepSession(init: { title: string }): Promise<string>
     createdAt: now,
     updatedAt: now,
     itemCount: 0,
+    pinned: false,
   };
 
   const tx = db.transaction(["sessionBodies", "sessionSummaries"], "readwrite");
@@ -311,6 +361,13 @@ export async function renameSession(id: string, title: string): Promise<void> {
   if (summary) await summaryStore.put({ ...summary, title, updatedAt: now });
 
   await tx.done;
+}
+
+export async function setSessionPinned(id: string, pinned: boolean): Promise<void> {
+  const db = await getDb();
+  const summary = await db.get("sessionSummaries", id);
+  if (!summary) return;
+  await db.put("sessionSummaries", { ...summary, pinned });
 }
 
 export async function moveSessionToProject(id: string, projectId: string | null): Promise<void> {
@@ -378,4 +435,45 @@ export async function deleteProject(id: string): Promise<void> {
 
   await tx.objectStore("projects").delete(id);
   await tx.done;
+}
+
+// ---------------------------------------------------------------------------
+// Saved files (reusable attachment library)
+// ---------------------------------------------------------------------------
+
+export async function listSavedFiles(): Promise<SavedFile[]> {
+  const db = await getDb();
+  const all = await db.getAll("savedFiles");
+  return all.sort((a, b) => b.addedAt - a.addedAt);
+}
+
+/** Adds a file to the reuse library, or just bumps its recency if the same name+length was already saved. */
+export async function saveFileToLibrary(input: { fileName: string; text: string; truncated: boolean }): Promise<void> {
+  const db = await getDb();
+  const all = await db.getAll("savedFiles");
+  const existing = all.find((f) => f.fileName === input.fileName && f.text.length === input.text.length);
+
+  if (existing) {
+    await db.put("savedFiles", { ...existing, addedAt: Date.now() });
+    return;
+  }
+
+  await db.put("savedFiles", {
+    id: newId(),
+    fileName: input.fileName,
+    text: input.text,
+    truncated: input.truncated,
+    addedAt: Date.now(),
+  });
+
+  const updated = await db.getAll("savedFiles");
+  if (updated.length > MAX_SAVED_FILES) {
+    const oldest = updated.sort((a, b) => a.addedAt - b.addedAt)[0];
+    await db.delete("savedFiles", oldest.id);
+  }
+}
+
+export async function deleteSavedFile(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete("savedFiles", id);
 }
