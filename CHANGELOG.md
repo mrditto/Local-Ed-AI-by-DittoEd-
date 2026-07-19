@@ -2,7 +2,7 @@
 
 All notable changes to Local Ed AI are documented here.
 
-## Unreleased
+## 0.4.0 — 2026-07-19
 
 ### Added
 - Persistent chat and IEP draft history (IndexedDB-backed) — every conversation and IEP draft autosaves and can be resumed later with full context.
