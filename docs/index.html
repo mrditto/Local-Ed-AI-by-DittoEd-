@@ -214,11 +214,11 @@
       entirely on <strong>your</strong> computer, with nothing you type ever sent anywhere else.
     </p>
     <div class="download-row">
-      <a id="download-btn" class="btn btn-stamp" href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/releases/latest">
+      <a id="download-btn" class="btn btn-stamp" href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/releases/latest" download>
         Download for Windows
       </a>
       <span class="download-hint" id="download-hint">Free · Runs offline · ~10 minute setup</span>
-      <span class="download-alt"><a href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-">View the source on GitHub</a></span>
+      <span class="download-alt">Having trouble? <a href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/releases">Get it from the repository</a></span>
     </div>
   </div>
 </header>
@@ -360,10 +360,13 @@
   var btn = document.getElementById("download-btn");
   var hint = document.getElementById("download-hint");
 
+  var ua = navigator.userAgent;
+  var isMac = /Mac/.test(ua);
+  var isWin = /Win/.test(ua);
+  var osLabel = isMac ? "macOS" : isWin ? "Windows" : "Linux";
+  btn.textContent = "Download for " + osLabel;
+
   function pickAsset(assets) {
-    var ua = navigator.userAgent;
-    var isMac = /Mac/.test(ua);
-    var isWin = /Win/.test(ua);
     var pattern = isMac ? /\.dmg$/i : isWin ? /\.(msi|exe)$/i : /\.(AppImage|deb)$/i;
     var match = assets.find(function (a) { return pattern.test(a.name); });
     return match || assets[0];
