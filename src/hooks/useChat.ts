@@ -40,6 +40,21 @@ export function useChat(options?: UseChatOptions) {
   const onTurnCompleteRef = useRef(options?.onTurnComplete);
   onTurnCompleteRef.current = options?.onTurnComplete;
 
+  // Authoritative synchronous copy of the transcript. React 18 batches state
+  // updates even inside async functions, so a value captured via a
+  // `setMessages(prev => ...)` closure is not reliably available immediately
+  // after the call returns — this ref is, which is what onTurnComplete needs
+  // to persist the *complete* turn (prompt + response) rather than racing
+  // ahead with a stale/prompt-only array.
+  const messagesRef = useRef<ChatMessage[]>(messages);
+
+  const appendMessage = useCallback((message: ChatMessage): ChatMessage[] => {
+    const next = [...messagesRef.current, message];
+    messagesRef.current = next;
+    setMessages(next);
+    return next;
+  }, []);
+
   const sendMessage = useCallback(async (text: string, sendOptions?: SendMessageOptions) => {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
@@ -54,7 +69,7 @@ export function useChat(options?: UseChatOptions) {
       attachment: sendOptions?.attachment,
       outgoingContent: outgoingText,
     };
-    setMessages((prev) => [...prev, userMessage]);
+    appendMessage(userMessage);
     setIsSending(true);
 
     const conversation: ChatRequestMessage[] = [
@@ -65,42 +80,35 @@ export function useChat(options?: UseChatOptions) {
     const result = await sendChat(conversation);
     outgoingHistoryRef.current = conversation;
 
-    let finalMessages: ChatMessage[] = [];
+    let finalMessages: ChatMessage[];
 
     if (result.ok) {
       outgoingHistoryRef.current = [
         ...outgoingHistoryRef.current,
         { role: "assistant", content: result.value },
       ];
-      const assistantMessage: ChatMessage = {
+      finalMessages = appendMessage({
         id: newId(),
         role: "assistant",
         text: result.value,
         createdAt: Date.now(),
-      };
-      setMessages((prev) => {
-        finalMessages = [...prev, assistantMessage];
-        return finalMessages;
       });
     } else {
       setLastErrorKind(result.error);
-      const errorMessage: ChatMessage = {
+      finalMessages = appendMessage({
         id: newId(),
         role: "error",
         text: result.message,
         createdAt: Date.now(),
-      };
-      setMessages((prev) => {
-        finalMessages = [...prev, errorMessage];
-        return finalMessages;
       });
     }
 
     setIsSending(false);
     onTurnCompleteRef.current?.(finalMessages, outgoingHistoryRef.current);
-  }, [isSending]);
+  }, [isSending, appendMessage]);
 
   const reset = useCallback(() => {
+    messagesRef.current = [];
     setMessages([]);
     setLastErrorKind(null);
     outgoingHistoryRef.current = [];
