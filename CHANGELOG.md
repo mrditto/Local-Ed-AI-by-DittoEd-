@@ -2,6 +2,11 @@
 
 All notable changes to Local Ed AI are documented here.
 
+## 0.4.1 — 2026-07-20
+
+### Fixed
+- A chat turn could get saved to history with only the user's prompt and no assistant response, caused by reading the final transcript from a value assigned inside a `setMessages` closure — not reliably synchronous under React 18+'s automatic batching. History now tracks the transcript via a ref updated synchronously on every message append.
+
 ## 0.4.0 — 2026-07-19
 
 ### Added
