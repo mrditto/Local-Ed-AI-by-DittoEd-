@@ -60,6 +60,17 @@ function deriveChatSessionTitle(prompt: Prompt, messages: ChatMessage[]): string
   return `${prompt.title}: ${snippet}`;
 }
 
+function toStoredMessages(messages: ChatMessage[]): StoredChatMessage[] {
+  return messages.map((m) => ({
+    id: m.id,
+    role: m.role,
+    text: m.text,
+    createdAt: m.createdAt,
+    attachment: m.attachment,
+    outgoingContent: m.outgoingContent,
+  }));
+}
+
 /** Loads a resumed session's messages before mounting the chat itself — useChat's initial state is only read once, on mount. */
 export function ChatPanel(props: ChatPanelProps) {
   const { resumeSessionId, prompt, onBack } = props;
@@ -123,32 +134,42 @@ function ChatPanelBody({
   initialState,
 }: ChatPanelBodyProps) {
   const sessionIdRef = useRef<string | null>(initialSessionId);
+  // Guards against creating two sessions if messages change again before the
+  // first createChatSession promise resolves.
+  const sessionCreationRef = useRef<Promise<string> | null>(null);
 
-  const handleTurnComplete = useCallback(
-    (turnMessages: ChatMessage[]) => {
-      const storedMessages: StoredChatMessage[] = turnMessages.map((m) => ({
-        id: m.id,
-        role: m.role,
-        text: m.text,
-        createdAt: m.createdAt,
-        attachment: m.attachment,
-        outgoingContent: m.outgoingContent,
-      }));
-      void (async () => {
-        if (!sessionIdRef.current) {
-          sessionIdRef.current = await createChatSession({
-            title: deriveChatSessionTitle(prompt, turnMessages),
+  const { messages, isSending, sendMessage, reset } = useChat({ initialState });
+
+  // Persist the full transcript straight from the live `messages` array
+  // whenever it changes. Saving from `messages` (rather than a turn-complete
+  // callback) guarantees history keeps both the teacher prompt and the LLM
+  // response, and never a prompt-only snapshot.
+  useEffect(() => {
+    if (messages.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      if (!sessionIdRef.current) {
+        if (!sessionCreationRef.current) {
+          sessionCreationRef.current = createChatSession({
+            title: deriveChatSessionTitle(prompt, messages),
             promptId: surface === "assistant" ? null : prompt.id,
             surface,
           });
         }
-        await saveChatTurn(sessionIdRef.current, { messages: storedMessages });
-      })();
-    },
-    [prompt, surface],
-  );
-
-  const { messages, isSending, sendMessage, reset } = useChat({ initialState, onTurnComplete: handleTurnComplete });
+        sessionIdRef.current = await sessionCreationRef.current;
+      }
+      // A newer `messages` render superseded this one — let its effect write
+      // the complete transcript instead of racing a stale snapshot in behind it.
+      if (cancelled) return;
+      await saveChatTurn(sessionIdRef.current, {
+        messages: toStoredMessages(messages),
+        title: deriveChatSessionTitle(prompt, messages),
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, prompt, surface]);
   const [personalization] = useState(() => loadPersonalization());
   const [draft, setDraft] = useState(initialMessage ? "" : prompt.template);
   const [tone, setTone] = useState<Personalization["tone"]>(personalization.tone);
@@ -297,6 +318,7 @@ function ChatPanelBody({
   function handleNewChat() {
     reset();
     sessionIdRef.current = null;
+    sessionCreationRef.current = null;
     setDraft(prompt.template);
     setAttachment(null);
     setAttachmentError("");
