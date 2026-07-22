@@ -2,6 +2,12 @@
 
 All notable changes to Local Ed AI are documented here.
 
+## 0.4.3 — 2026-07-22
+
+### Fixed
+
+- Word/PDF export from chat still failed after picking a save location in 0.4.2. The `fs:default` permission only grants read access to app-specific directories — it does not include `write_file` at all, regardless of scope. Added the `fs:allow-write-file` permission explicitly; this was the actual remaining blocker on top of the 0.4.2 scope fix.
+
 ## 0.4.2 — 2026-07-22
 
 ### Added
