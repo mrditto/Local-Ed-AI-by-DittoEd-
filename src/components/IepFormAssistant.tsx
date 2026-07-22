@@ -8,9 +8,8 @@ import {
   Paragraph,
   TextRun,
 } from "docx";
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
 import { sendChat } from "../api/ollama";
+import { saveGeneratedFile } from "../utils/exportMessage";
 import { Button } from "./ui/Button";
 import { Spinner } from "./ui/Spinner";
 import {
@@ -57,10 +56,6 @@ function computeAge(dateOfBirth: string, fallbackAgeText: string): number | null
 
   const parsed = Number.parseInt(fallbackAgeText, 10);
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function isTauriRuntime(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
 export function IepFormAssistant({ onBack, resumeSessionId }: IepFormAssistantProps) {
@@ -511,28 +506,14 @@ export function IepFormAssistant({ onBack, resumeSessionId }: IepFormAssistantPr
 
     const bytes = new Uint8Array(await Packer.toArrayBuffer(doc));
 
-    if (isTauriRuntime()) {
-      const filePath = await save({
-        title: "Save IEP draft as Word document",
-        defaultPath: "md-iep-draft.docx",
-        filters: [{ name: "Word", extensions: ["docx"] }],
-      });
-      if (!filePath) return;
-      await writeFile(filePath, bytes);
-      setExportMessage(`Saved Word draft to ${filePath}`);
-      return;
-    }
-
-    const blob = new Blob([bytes], {
-      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    const result = await saveGeneratedFile(bytes, {
+      baseFilename: "md-iep-draft",
+      extension: "docx",
+      dialogTitle: "Save IEP draft as Word document",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "md-iep-draft.docx";
-    a.click();
-    URL.revokeObjectURL(url);
-    setExportMessage("Downloaded Word draft.");
+    if (result.cancelled) return;
+    setExportMessage(result.savedTo ? `Saved Word draft to ${result.savedTo}` : "Downloaded Word draft.");
   }
 
   function handlePdfExport() {

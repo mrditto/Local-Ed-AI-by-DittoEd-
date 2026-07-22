@@ -4,6 +4,7 @@ import { useChat, type ChatMessage } from "../hooks/useChat";
 import { checkConnection, type ChatRequestMessage } from "../api/ollama";
 import { DisclaimerFooter } from "./DisclaimerFooter";
 import { VerifyFooter } from "./VerifyFooter";
+import { MessageActions } from "./MessageActions";
 import { Button } from "./ui/Button";
 import { Spinner } from "./ui/Spinner";
 import type { Prompt } from "../prompts";
@@ -356,6 +357,13 @@ function ChatPanelBody({
               </div>
             ) : (
               <p>{msg.text}</p>
+            )}
+            {msg.role === "assistant" && (
+              <MessageActions
+                markdown={msg.text}
+                disabled={isSending}
+                defaultFilenameSeed={{ title: deriveChatSessionTitle(prompt, messages), fallbackText: msg.text }}
+              />
             )}
             {msg.role === "assistant" && <DisclaimerFooter />}
             {msg.role === "assistant" && prompt.category === "sped" && <VerifyFooter />}

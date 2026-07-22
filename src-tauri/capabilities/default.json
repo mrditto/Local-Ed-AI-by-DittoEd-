@@ -8,9 +8,10 @@
     "opener:default",
     "dialog:default",
     "fs:default",
+    "clipboard-manager:allow-write-text",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$TEMP/*" }]
+      "allow": [{ "path": "$TEMP/*" }, { "path": "**" }]
     },
     {
       "identifier": "http:default",

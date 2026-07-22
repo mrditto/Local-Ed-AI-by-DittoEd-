@@ -315,6 +315,22 @@ body {
   color: var(--color-primary-hover);
 }
 
+.chat-message-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.chat-message-actions .btn {
+  padding: 4px 8px;
+  font-size: 0.78rem;
+}
+.chat-message-actions-error {
+  font-size: 0.78rem;
+  color: var(--color-error-text);
+}
+
 .chat-input-row {
   display: flex;
   gap: 8px;
