@@ -300,7 +300,11 @@ export async function createChatSession(init: {
 }
 
 export function saveChatTurn(id: string, patch: { messages: StoredChatMessage[]; title?: string }): Promise<void> {
-  return debounceSave(`chat:${id}`, () => writeChatTurnNow(id, patch));
+  // Chat turns write immediately: a debounced save could drop the final
+  // assistant-reply write (e.g. on unmount/navigation), leaving history with
+  // an incomplete, prompt-only transcript. IEP drafts still debounce because
+  // they fire on every keystroke.
+  return writeChatTurnNow(id, patch);
 }
 
 export async function createIepSession(init: { title: string }): Promise<string> {
