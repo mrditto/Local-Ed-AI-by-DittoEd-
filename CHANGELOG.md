@@ -2,6 +2,17 @@
 
 All notable changes to Local Ed AI are documented here.
 
+## 0.4.2 — 2026-07-22
+
+### Added
+
+- Copy / Download as Word / Download as PDF actions under every assistant chat response, in both Prompt Library chat and Ask DittoEd. Word and PDF preserve headings, bold, and lists from the response's markdown; Copy copies the raw markdown to the clipboard.
+
+### Fixed
+
+- The clipboard plugin had no permissions granted, so Copy silently failed.
+- The filesystem write scope was restricted to a temp-only path, so saving an exported Word/PDF file to a normal location (Desktop, Documents, etc.) via the save dialog was silently blocked — this also affected the existing IEP Form Assistant's Word export.
+
 ## 0.4.1 — 2026-07-20
 
 ### Fixed
