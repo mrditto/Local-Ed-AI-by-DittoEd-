@@ -1,3 +1,11 @@
+---
+name: LocalEdLLM Autonomous Development
+description: Fully autonomous Claude skill for LocalEdLLM development - executes complete workflows from icon replacement to releases without manual intervention
+version: 1.0.0
+status: production
+tags: [development, automation, github, localedllm, autonomous, ci-cd, icon-replacement, release-management, feature-implementation, bug-fixes, documentation]
+---
+
 # LocalEdLLM Autonomous Development Skill
 
 **Version**: 1.0  
@@ -220,69 +228,7 @@ Skill executes:
 
 ---
 
-## How It Works Internally
-
-### One-Time Setup ✅
-- GitHub token provided (30-day expiration)
-- Token configured for `repo` & `workflow` scopes
-- Skill saved to memory
-- Verification complete
-
-### Autonomous Execution
-1. **You describe task** in chat
-2. **Skill loads from memory**
-3. **Token retrieved** (encrypted)
-4. **Autonomous execution**:
-   - Clone repo
-   - Create branch
-   - Generate/modify code
-   - Run tests
-   - Commit & push
-   - Create PR
-   - Monitor CI/CD
-   - Report results
-5. **You review on GitHub** (final gate)
-6. **You approve/merge** (your decision)
-
-### Real-Time Status
-Throughout execution, you see:
-```
-[⏳ PHASE] What's happening
-[✅ STEP] What completed
-[⚠️ WARNING] If something needs attention
-[✅ COMPLETE] Final status with links
-```
-
----
-
-## Security & Safety
-
-### Token Management
-- ✅ **30-day expiration** (auto-expires, forces rotation)
-- ✅ **Encrypted storage** (secure memory, not in files)
-- ✅ **Limited scope** (repo + workflow only)
-- ✅ **Revokable** (any time on GitHub.com)
-- ✅ **Single repo** (LocalEdLLM only)
-- ✅ **Audit trail** (all commits logged)
-
-### Autonomous Guardrails
-- ✅ **Only modifies target repo** (mrditto/Local-Ed-AI-by-DittoEd-)
-- ✅ **Creates branches** (never works on main directly)
-- ✅ **Conventional commits** (clear history)
-- ✅ **Creates PRs** (you approve on GitHub)
-- ✅ **No auto-merge** (you maintain control)
-- ✅ **Clear reporting** (you see everything)
-
-### You Control Everything
-1. **Task approval**: You describe what to do
-2. **GitHub approval**: You review PRs on GitHub.com
-3. **Merge decision**: You decide when to merge
-4. **Release decision**: You trigger releases
-5. **Token control**: You can revoke anytime
-
----
-
-## Token Expiration & Extension Guide
+## ⏰ Token Expiration & Management
 
 ### Current Token Status ⏳
 
@@ -294,14 +240,14 @@ Throughout execution, you see:
 | **Days Remaining** | 30 days ⏳ |
 | **Scopes** | repo, workflow |
 
-### Token Expiration Countdown
+### Token Expiration Timeline
 ```
 Today:        2026-07-23  (Created)
-7 Days Out:   2026-07-30  (Still plenty of time)
-14 Days Out:  2026-08-06  (Halfway there)
-21 Days Out:  2026-08-13  (Start planning refresh)
-28 Days Out:  2026-08-20  (Refresh THIS WEEK)
-30 Days:      2026-08-22  (EXPIRES - Must have new token)
+7 Days:       2026-07-30  (Still plenty of time)
+14 Days:      2026-08-06  (Halfway through)
+21 Days:      2026-08-13  (Start thinking about refresh)
+28 Days:      2026-08-20  (Refresh THIS WEEK)
+30 Days:      2026-08-22  (EXPIRES - need new token)
 ```
 
 ⏰ **Reminder**: I'll notify you when there are 7 days remaining!
@@ -375,148 +321,81 @@ Today:        2026-07-23  (Created)
 
 ---
 
-## Token Refresh Checklist
+## How It Works Internally
 
-### When to Refresh
+### One-Time Setup ✅
+- GitHub token provided (30-day expiration)
+- Token configured for repo + workflow access
+- Autonomous skill saved to memory
+
+### Autonomous Execution
+1. **You describe task** in chat
+2. **Skill loads from memory**
+3. **Token retrieved** (encrypted)
+4. **Autonomous execution**:
+   - Clone repo
+   - Create branch
+   - Generate/modify code
+   - Run tests
+   - Commit & push
+   - Create PR
+   - Monitor CI/CD
+   - Report results
+5. **You review on GitHub** (final gate)
+6. **You approve/merge** (your decision)
+
+### Real-Time Status
+Throughout execution, you see:
 ```
-If you see:  "⏰ Your GitHub token expires in 7 days"
-    ↓
-Do this:     Follow one of the three options above
-    ↓
-Then tell:   "Update token: ghp_[new-token]"
-    ↓
-Result:      ✅ New token active, skill continues
-```
-
-### Step-by-Step Checklist
-```
-☐ NOTICE: Chat shows "Token expiring in 7 days" or you manually check
-☐ NAVIGATE: Go to https://github.com/settings/tokens/new
-☐ CREATE: Set expiration (30/60/90/custom days)
-☐ SCOPES: Ensure repo + workflow checked
-☐ GENERATE: Click "Generate token"
-☐ COPY: Copy ghp_... token to clipboard
-☐ PASTE: In chat, type "Update token: ghp_[paste]"
-☐ VERIFY: I'll confirm "✅ Token verified"
-☐ CONTINUE: Use skill normally again!
-```
-
-**Total time**: 2-3 minutes
-
----
-
-## Pro Tips for Token Management
-
-### Best Practices
-
-1. **Set Longer Expiration**
-   - Start with 90-day tokens
-   - Reduces refresh frequency
-   - Still secure (rotatable anytime)
-   - Fewer interruptions
-
-2. **Keep Multiple Tokens**
-   - Create 2+ backup tokens
-   - Rotate between them
-   - Always have one ready
-   - Never caught off-guard
-
-3. **Monitor Expiration**
-   - Check: "Check token expiration" (anytime)
-   - I'll remind you at 7 days
-   - Set your own calendar reminder
-   - Don't wait until it expires
-
-4. **Revoke Old Tokens**
-   - After creating new token
-   - Go to: https://github.com/settings/tokens
-   - Delete or revoke the old one
-   - Keeps your account secure
-
-5. **Use Meaningful Names**
-   - In GitHub UI, name it: "LocalEdLLM-Autonomous-Skill"
-   - Makes it easy to find later
-   - Helps if you have multiple tokens
-
----
-
-## What Happens When Token Expires
-
-### If You Let It Expire (Don't Do This ⚠️)
-```
-Skill tries to execute
-    ↓
-❌ "Authentication failed"
-    ↓
-Skill stops (can't push to GitHub)
-    ↓
-No PRs created
-    ↓
-No releases deployed
-    ↓
-Workflow blocked
-```
-
-### What to Do If Expired
-```
-1. Create new token: https://github.com/settings/tokens/new
-2. Tell me: "Update token: ghp_..."
-3. I'll verify
-4. Skill resumes working immediately
-5. No harm done - just a few minutes of downtime
+[⏳ PHASE] What's happening
+[✅ STEP] What completed
+[⚠️ WARNING] If something needs attention
+[✅ COMPLETE] Final status with links
 ```
 
 ---
 
-## Security Notes
+## Security & Safety
 
-### Why 30-Day Rotation?
-- ✅ **Industry standard** (AWS, GitHub recommend it)
-- ✅ **Limited damage** if token is compromised
-- ✅ **Forces security review** every month
-- ✅ **Still practical** (only 2 minutes to refresh)
-- ✅ **Automated reminders** (I'll tell you when)
+### Token Management
+- ✅ **30-day expiration** (auto-expires, forces rotation)
+- ✅ **Encrypted storage** (secure memory, not in files)
+- ✅ **Limited scope** (repo + workflow only)
+- ✅ **Revocable** (any time on GitHub.com)
+- ✅ **Single repo** (LocalEdLLM only)
+- ✅ **Audit trail** (all commits logged)
 
-### Your Token is Safe
-- ✅ **Scoped**: Only repo + workflow (limited permissions)
-- ✅ **Limited repo**: LocalEdLLM only
-- ✅ **Encrypted**: Not stored in files
-- ✅ **Logged**: All uses tracked on GitHub
-- ✅ **Revocable**: You can kill it anytime on GitHub.com
+### Autonomous Guardrails
+- ✅ **Only modifies target repo** (mrditto/Local-Ed-AI-by-DittoEd-)
+- ✅ **Creates branches** (never works on main directly)
+- ✅ **Conventional commits** (clear history)
+- ✅ **Creates PRs** (you approve on GitHub)
+- ✅ **No auto-merge** (you maintain control)
+- ✅ **Clear reporting** (you see everything)
 
-### If You Think Token is Compromised
-1. Go to: https://github.com/settings/tokens
-2. Find the token
-3. Click **Delete** or **Revoke**
-4. Create new token immediately
-5. Tell me: "Update token: ghp_..."
-6. Old token is now dead (no damage possible)
+### You Control Everything
+1. **Task approval**: You describe what to do
+2. **GitHub approval**: You review PRs on GitHub.com
+3. **Merge decision**: You decide when to merge
+4. **Release decision**: You trigger releases
+5. **Token control**: You can revoke anytime
 
 ---
 
-## Workflow Examples
+## Workflow Steps (Automated)
 
-### Example: Icon Replacement (Actual Execution 2026-07-23)
-
-**You said:**
-```
-"Replace the app icon with local_ed_icon.png"
-```
-
-**Skill executed:**
-```
-✅ Image processed: PNG → ICO + 6 sizes (772 KB)
-✅ Files copied: public/ and src-tauri/icons/
-✅ Config updated: index.html favicon links
-✅ Quality checks: ESLint ✓, TypeScript ✓
-✅ Committed: 97558df "chore: Replace app icon..."
-✅ Pushed: origin/chore/replace-app-icon
-✅ PR created: #23 (OPEN)
-✅ CI running: lint-and-typecheck in progress
-```
-
-**Timeline:** 8 minutes, completely autonomous
-**Your effort:** One request + one GitHub review
+### Full Cycle (Icon Replacement Example)
+1. Process image: Convert PNG → multi-size icons
+2. Clone repo: Set up local working environment
+3. Create branch: chore/replace-app-icon
+4. Copy files: Icons to public/ and src-tauri/icons/
+5. Update config: index.html, tauri.conf.json
+6. Run tests: ESLint, TypeScript, build checks
+7. Commit: Clear, conventional commit message
+8. Push: origin/chore/replace-app-icon
+9. Create PR: Auto-generated description, testing notes
+10. Monitor CI: GitHub Actions status tracking
+11. Report: Status links & next steps
 
 ---
 
@@ -578,6 +457,7 @@ Workflow blocked
 - Feature implementation: Ready
 - Release management: Ready
 - Documentation: Complete
+- Token expiration tracking: Complete
 
 ---
 
