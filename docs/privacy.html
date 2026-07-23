@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy policy — Local Ed AI by DittoEd</title>
+<meta name="description" content="Privacy policy for Local Ed AI by DittoEd. The application collects no data, transmits no data, and has no backend." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F2EDE1; --ink: #1E2A38; --ditto: #6B4C8C; --stamp: #C97A2B; --chalk: #FBF9F4;
+    --paper-line: #E3DCC8;
+    --font-display: "Zilla Slab", Georgia, serif;
+    --font-body: "Source Sans 3", system-ui, -apple-system, sans-serif;
+    --font-stencil: "Special Elite", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); line-height: 1.65; }
+  a { color: var(--ditto); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 56px 24px 80px; }
+  .back { font-family: var(--font-stencil); font-size: 0.82rem; }
+  h1 { font-family: var(--font-display); font-size: 2rem; margin: 24px 0 6px; }
+  .updated { font-size: 0.85rem; opacity: 0.65; margin-bottom: 32px; }
+  h2 { font-family: var(--font-display); font-size: 1.2rem; margin: 34px 0 10px; }
+  p, li { font-size: 0.98rem; }
+  .callout {
+    background: var(--chalk); border-left: 4px solid var(--stamp);
+    border-radius: 4px; padding: 16px 18px; margin: 24px 0;
+    font-size: 0.92rem;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 10px 12px; border: 1px solid var(--paper-line); vertical-align: top; }
+  th { background: var(--chalk); font-family: var(--font-display); }
+  .nav-links { font-size: 0.9rem; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--paper-line); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Back to Local Ed AI</a>
+  <h1>Privacy policy</h1>
+  <p class="updated">Local Ed AI by DittoEd · Last updated July 2026</p>
+
+  <div class="callout">
+    <strong>The short version:</strong> the application collects nothing, transmits nothing, and has no server to
+    send anything to. There is no account, no login, no telemetry, and no analytics. Everything you type stays on
+    the machine you typed it on.
+  </div>
+
+  <h2>Who this covers</h2>
+  <p>
+    This policy covers the Local Ed AI desktop application and this website. The project is maintained by an
+    individual developer, not a company. There is no data processor, no sub-processor, and no third party with
+    access to anything you enter, because nothing you enter ever leaves your device.
+  </p>
+
+  <h2>What the application collects</h2>
+  <p>Nothing. There is no collection mechanism in the software.</p>
+  <table>
+    <tr><th>Category</th><th>Collected?</th></tr>
+    <tr><td>Personal information (name, email, school)</td><td>No. There is no account system.</td></tr>
+    <tr><td>Student data, including IEP content</td><td>No. Processed locally, stored locally, never transmitted.</td></tr>
+    <tr><td>Chat content and prompts</td><td>No. Sent only to the local model on your own machine.</td></tr>
+    <tr><td>Uploaded or attached files</td><td>No. Stored in local browser storage on your device.</td></tr>
+    <tr><td>Usage analytics, telemetry, crash reports</td><td>No. None are implemented.</td></tr>
+    <tr><td>Advertising or tracking identifiers</td><td>No. The project has no advertising of any kind.</td></tr>
+    <tr><td>Cookies</td><td>No.</td></tr>
+  </table>
+
+  <h2>Where your data is stored</h2>
+  <p>
+    On your machine only. Chats, IEP drafts, projects, and saved files are written to IndexedDB, the local storage
+    layer of the application's embedded browser view, inside your own user profile. Nothing is synced, backed up
+    to a server, or replicated to another device. If you delete the application data or the user profile, that
+    content is gone — there is no copy anywhere else, including with the maintainer.
+  </p>
+
+  <h2>Network connections the application makes</h2>
+  <p>The application makes exactly two categories of outbound request, both of which are visible in the source code:</p>
+  <ul>
+    <li>
+      <strong>First-run setup (optional, one time).</strong> If you do not already have Ollama installed, the app
+      offers to download Ollama and a language model of your choosing. These are downloads of publicly available
+      software; nothing about you or your work is sent as part of them.
+    </li>
+    <li>
+      <strong>Local model requests (ongoing).</strong> All prompts and generated text travel between the app and
+      Ollama over <code>localhost</code> on your own machine. This traffic never touches a network.
+    </li>
+  </ul>
+  <p>
+    There is no cloud fallback. If your local model is unavailable, the application reports an error rather than
+    reaching out to a hosted service.
+  </p>
+
+  <h2>This website</h2>
+  <p>
+    This site is static, hosted on GitHub Pages, and sets no cookies and runs no analytics. It makes one
+    client-side request to GitHub's public releases API so the download button can point at the current build.
+    That request goes to GitHub, not to us, and is subject to
+    <a href="https://docs.github.com/site-policy/privacy-policies/github-privacy-statement">GitHub's privacy statement</a>.
+    Fonts are loaded from Google Fonts, which means your browser contacts Google's servers to retrieve them.
+  </p>
+
+  <h2>FERPA, IDEA, and COPPA</h2>
+  <p>
+    Because no student data is collected, transmitted, or stored by any party other than the user's own device,
+    the maintainer is not a "school official" with access to education records, and there is no vendor data flow to
+    govern. Districts evaluating this tool generally find there is nothing to sign a data privacy agreement about,
+    since there is no data sharing to agree on. Your district should still conduct its own review — see the
+    <a href="terms.html">terms and disclaimer</a>.
+  </p>
+  <p>
+    The current release is a tool for educators, not for direct student use. A separate student-facing build is
+    planned and will carry its own guardrails and its own policy.
+  </p>
+
+  <h2>Your rights and choices</h2>
+  <p>
+    Rights of access, correction, deletion, and portability are typically exercised by asking a company for a copy
+    of the data it holds about you. There is no such request to make here, because the maintainer holds nothing.
+    You already have complete access to your data, and deleting it is entirely within your control.
+  </p>
+
+  <h2>Verifying any of this</h2>
+  <p>
+    You do not have to take our word for it. The source is
+    <a href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-">public under Apache 2.0</a>, so you or your IT
+    department can read every network call the application makes, monitor its traffic, or build your own installer
+    from source.
+  </p>
+
+  <h2>Changes to this policy</h2>
+  <p>
+    This page may be updated as the project evolves. Material changes will be noted here with an updated date. If
+    the project ever begins collecting data of any kind — which is not planned and would contradict its purpose —
+    that change would be announced prominently rather than quietly edited in.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    Questions about this policy can be raised as an issue on the
+    <a href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/issues">project repository</a>.
+  </p>
+
+  <p class="nav-links">
+    <a href="index.html">Home</a> ·
+    <a href="ai-policy.html">AI use policy</a> ·
+    <a href="terms.html">Terms &amp; disclaimer</a>
+  </p>
+</div>
+</body>
+</html>

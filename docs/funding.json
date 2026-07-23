@@ -1,0 +1,77 @@
+{
+  "version": "v1.0.0",
+  "entity": {
+    "type": "individual",
+    "role": "maintainer",
+    "name": "Brad Ditto",
+    "email": "bradleyjditto@gmail.com",
+    "description": "K-12 instructional technology specialist building open, privacy-preserving AI tooling for public schools.",
+    "webpageUrl": { "url": "https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/" }
+  },
+  "projects": [
+    {
+      "guid": "local-ed-ai",
+      "name": "Local Ed AI by DittoEd",
+      "description": "A local-first, fully offline AI assistant for educators. Runs against Ollama on the teacher's own machine, with no cloud calls and no data egress. Includes an IEP Form Assistant that drafts Maryland MdIEP narrative sections on-device, so the most sensitive student data a school handles never leaves the laptop.",
+      "webpageUrl": { "url": "https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/" },
+      "repositoryUrl": {
+        "url": "https://github.com/mrditto/Local-Ed-AI-by-DittoEd-",
+        "wellKnown": "https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/blob/master/.well-known/funding-manifest-urls"
+      },
+      "licenses": ["spdx:Apache-2.0"],
+      "tags": ["education", "privacy", "local-ai", "local-llm", "accessibility", "special-education", "offline-first"]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "github-sponsors",
+        "type": "payment-provider",
+        "address": "https://github.com/sponsors/mrditto",
+        "description": "GitHub Sponsors"
+      }
+    ],
+    "plans": [
+      {
+        "guid": "code-signing",
+        "status": "active",
+        "name": "Code signing certificate",
+        "description": "An annual code signing certificate so the Windows installer no longer trips a SmartScreen 'unknown publisher' warning. This warning is the single largest barrier to adoption by risk-averse school IT departments.",
+        "amount": 150,
+        "currency": "USD",
+        "frequency": "yearly",
+        "channels": ["github-sponsors"]
+      },
+      {
+        "guid": "domain",
+        "status": "active",
+        "name": "Independent domain",
+        "description": "A stable, memorable domain pointed at the existing free GitHub Pages site, so the project is not tied to any one platform.",
+        "amount": 40,
+        "currency": "USD",
+        "frequency": "yearly",
+        "channels": ["github-sponsors"]
+      },
+      {
+        "guid": "contributor-time",
+        "status": "active",
+        "name": "Contributor time",
+        "description": "Funding for the parts one person cannot sustain alone: cross-district testing, accessibility review, and features requested by working teachers.",
+        "amount": 500,
+        "currency": "USD",
+        "frequency": "monthly",
+        "channels": ["github-sponsors"]
+      },
+      {
+        "guid": "supporter",
+        "status": "active",
+        "name": "Any amount",
+        "description": "Support ongoing development of open, privacy-preserving AI tooling for public schools.",
+        "amount": 0,
+        "currency": "USD",
+        "frequency": "one-time",
+        "channels": ["github-sponsors"]
+      }
+    ]
+  }
+}
