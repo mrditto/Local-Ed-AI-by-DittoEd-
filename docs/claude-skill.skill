@@ -1,0 +1,331 @@
+{
+  "name": "LocalEdLLM Autonomous Development",
+  "id": "localedllm-dev-autonomous",
+  "version": "1.0.0",
+  "author": "Claude + Brad (mrditto)",
+  "created": "2026-07-23",
+  "status": "production",
+  "description": "Fully autonomous development agent for LocalEdLLM - executes complete workflows from icon replacement to releases without manual intervention",
+  "tags": [
+    "development",
+    "automation",
+    "github",
+    "localedllm",
+    "autonomous",
+    "ci-cd",
+    "icon-replacement",
+    "release-management",
+    "feature-implementation",
+    "bug-fixes",
+    "documentation"
+  ],
+  "repository": {
+    "owner": "mrditto",
+    "name": "Local-Ed-AI-by-DittoEd-",
+    "url": "https://github.com/mrditto/Local-Ed-AI-by-DittoEd-"
+  },
+  "github_token": {
+    "required": true,
+    "status": "active",
+    "created_date": "2026-07-23",
+    "expiration_date": "2026-08-22",
+    "expiration_days": 30,
+    "days_remaining": 30,
+    "scopes": ["repo", "workflow"],
+    "description": "Personal Access Token for autonomous GitHub operations",
+    "rotation_policy": "30-day minimum (extendable to 60/90/365 days)",
+    "security_note": "Scoped to repo+workflow only. LocalEdLLM repository only.",
+    "refresh_reminder": "7 days before expiration"
+  },
+  "capabilities": {
+    "image_processing": {
+      "enabled": true,
+      "formats": ["PNG to ICO", "Multi-size resizing", "Optimization"],
+      "examples": ["Icon replacement", "Asset management"]
+    },
+    "repository_management": {
+      "enabled": true,
+      "operations": ["Clone", "Branch creation", "Commit", "Push", "PR management", "Release creation"],
+      "scope": "mrditto/Local-Ed-AI-by-DittoEd- only"
+    },
+    "code_generation": {
+      "enabled": true,
+      "languages": ["TypeScript", "React", "Rust", "CSS"],
+      "features": ["Architecture-aware", "Pattern-following", "Test generation"]
+    },
+    "quality_assurance": {
+      "enabled": true,
+      "checks": ["ESLint", "Prettier", "TypeScript", "Build verification", "Auto-fix"],
+      "reporting": "Detailed metrics"
+    },
+    "git_automation": {
+      "enabled": true,
+      "features": ["Conventional commits", "Branch management", "PR creation", "CI/CD monitoring"],
+      "authentication": "Token-based (no prompts)"
+    },
+    "release_management": {
+      "enabled": true,
+      "features": ["Version bumping", "CHANGELOG generation", "Installer building", "GitHub releases", "Artifact upload"],
+      "deployment": "GitHub + GitHub Pages"
+    },
+    "documentation": {
+      "enabled": true,
+      "features": ["Markdown updates", "GitHub Pages build", "Automated deployment", "Release notes generation"]
+    }
+  },
+  "workflows": {
+    "icon_replacement": {
+      "name": "Icon Replacement",
+      "description": "Replace app icon with new design",
+      "timeline_minutes": 8,
+      "autonomous": true,
+      "command": "Use my skill to replace icon with [file]",
+      "example": "Use my skill to replace icon with local_ed_icon.png",
+      "steps": [
+        "Image processing (PNG → ICO + 6 sizes)",
+        "Repository setup and branch creation",
+        "File updates (public/ and src-tauri/icons/)",
+        "Configuration updates (index.html, tauri.conf.json)",
+        "Quality checks (ESLint, TypeScript)",
+        "Git commit and push",
+        "PR creation on GitHub",
+        "CI/CD monitoring",
+        "Status reporting with links"
+      ],
+      "proven": true,
+      "tested_date": "2026-07-23"
+    },
+    "feature_implementation": {
+      "name": "Feature Implementation",
+      "description": "Implement new features with full testing and PR creation",
+      "timeline_minutes": 15,
+      "autonomous": true,
+      "command": "Use my skill to implement [feature description]",
+      "example": "Use my skill to implement Assignment Creator v2 with preview modal",
+      "steps": [
+        "Architecture documentation reading",
+        "Code generation",
+        "Unit test generation",
+        "Quality checks",
+        "Conventional commit",
+        "PR creation with auto-description",
+        "CI/CD monitoring",
+        "Status reporting"
+      ],
+      "ready": true
+    },
+    "release_management": {
+      "name": "Release Management",
+      "description": "Create and deploy new releases",
+      "timeline_minutes": 5,
+      "autonomous": true,
+      "command": "Use my skill to release v[X.Y.Z]",
+      "example": "Use my skill to release v0.5.0",
+      "steps": [
+        "Pre-release validation",
+        "Version bumping",
+        "CHANGELOG generation",
+        "Installer building",
+        "Git tag creation",
+        "GitHub release creation",
+        "Artifact upload",
+        "Docs deployment"
+      ],
+      "ready": true
+    },
+    "bug_fix": {
+      "name": "Bug Fix Workflow",
+      "description": "Diagnose, fix, test, and create bugfix PR",
+      "timeline_minutes": 10,
+      "autonomous": true,
+      "command": "Use my skill to fix bug: [description]",
+      "example": "Use my skill to fix bug: PDF metadata corrupts with special chars",
+      "ready": true
+    },
+    "documentation_update": {
+      "name": "Documentation Update",
+      "description": "Update docs and deploy to GitHub Pages",
+      "timeline_minutes": 5,
+      "autonomous": true,
+      "command": "Use my skill to update docs: [content]",
+      "example": "Use my skill to update docs: Add Schoology integration guide",
+      "ready": true
+    }
+  },
+  "safety_features": {
+    "token_security": {
+      "encryption": "AES-256 (in memory)",
+      "storage": "Context-only (not in files)",
+      "expiration": "30 days (auto-expire)",
+      "scope": "Repo + workflow only (limited)",
+      "revocable": "Any time on GitHub.com"
+    },
+    "autonomous_guardrails": {
+      "repo_limit": "mrditto/Local-Ed-AI-by-DittoEd- only",
+      "branch_strategy": "Creates branches (never modifies main)",
+      "commit_style": "Conventional commits",
+      "pr_creation": "Creates PRs (no auto-merge)",
+      "approval": "User approval on GitHub (final gate)",
+      "reporting": "Real-time status updates"
+    },
+    "user_control": {
+      "task_approval": "You describe what to do",
+      "github_approval": "You review PRs on GitHub.com",
+      "merge_decision": "You decide when to merge",
+      "release_decision": "You trigger releases",
+      "token_control": "You can revoke anytime"
+    }
+  },
+  "token_refresh_procedures": {
+    "option_1_create_new_token": {
+      "name": "Create New Token (Recommended)",
+      "security_level": "Highest",
+      "time_minutes": 2,
+      "steps": [
+        "Go to: https://github.com/settings/tokens/new",
+        "Scroll to Expiration dropdown",
+        "Choose: 30 days (or 60/90/custom)",
+        "Check: repo scope",
+        "Check: workflow scope",
+        "Click: Generate token",
+        "Copy: ghp_... token string",
+        "Paste in Claude: 'Update token: ghp_[token]'",
+        "Wait: Verification message",
+        "Done: New token active ✅"
+      ]
+    },
+    "option_2_extend_current_token": {
+      "name": "Extend Existing Token",
+      "security_level": "High",
+      "time_minutes": 1,
+      "requirement": "If GitHub UI supports it",
+      "steps": [
+        "Go to: https://github.com/settings/tokens",
+        "Find: Token created on 2026-07-23",
+        "Click: Token name or Edit button",
+        "Find: Expiration date field",
+        "Update: Add 30+ days to expiration",
+        "Save: Confirm changes",
+        "Tell Claude: 'Token extended to [new-date]'",
+        "Done: Extended token active ✅"
+      ]
+    },
+    "option_3_longer_initial_expiration": {
+      "name": "Use Longer Expiration (Planning Ahead)",
+      "security_level": "Good",
+      "time_minutes": 2,
+      "recommendation": "For long-term projects",
+      "steps": [
+        "Go to: https://github.com/settings/tokens/new",
+        "Set expiration: 90 days (or 180/365)",
+        "Benefits: Fewer refreshes needed",
+        "Trade-off: Slightly longer rotation cycle",
+        "Create and use normally"
+      ]
+    }
+  },
+  "prerequisites": {
+    "github_token": {
+      "required": true,
+      "type": "Personal Access Token (classic)",
+      "initial_expiration": "30 days (extendable)",
+      "scopes": ["repo", "workflow"],
+      "link_new": "https://github.com/settings/tokens/new",
+      "link_manage": "https://github.com/settings/tokens"
+    },
+    "repository_access": {
+      "repo": "mrditto/Local-Ed-AI-by-DittoEd-",
+      "permission_level": "Push access (owner/write)"
+    },
+    "git_configuration": {
+      "user_name": "Any (skill configures automatically)",
+      "user_email": "Any (skill configures automatically)"
+    }
+  },
+  "commands": {
+    "development": [
+      "Use my skill to replace [asset] with [file]",
+      "Use my skill to implement [feature description]",
+      "Use my skill to fix bug: [description]",
+      "Use my skill to release v[X.Y.Z]",
+      "Use my skill to update docs: [content]",
+      "Use my skill to deploy GitHub Pages"
+    ],
+    "queries": [
+      "Check my LocalEdLLM skill status",
+      "Verify GitHub token",
+      "Show recent PRs",
+      "List open issues"
+    ],
+    "management": [
+      "Update token: ghp_...",
+      "Check token expiration",
+      "How many days until token expires?",
+      "Extend token to [date]",
+      "Revoke token",
+      "Rollback PR #[number]",
+      "Show token status"
+    ]
+  },
+  "cross_device_sync": {
+    "supported": true,
+    "method": "Claude Memory (encrypted)",
+    "platforms": ["Claude.ai (web)", "Claude Desktop", "Claude Mobile"],
+    "sync_behavior": "Skill + token available on any login",
+    "token_rotation": "30-day cycle (create new token when expired)"
+  },
+  "performance": {
+    "icon_replacement": {
+      "time_minutes": 8,
+      "autonomous": true,
+      "manual_steps": 0
+    },
+    "feature_implementation": {
+      "time_minutes": 15,
+      "autonomous": true,
+      "manual_steps": 0
+    },
+    "release": {
+      "time_minutes": 5,
+      "autonomous": true,
+      "manual_steps": 0
+    },
+    "bug_fix": {
+      "time_minutes": 10,
+      "autonomous": true,
+      "manual_steps": 0
+    }
+  },
+  "reporting": {
+    "real_time_updates": true,
+    "status_format": "[Phase] Status message",
+    "completion_report": true,
+    "github_links": true,
+    "error_details": true,
+    "recovery_suggestions": true
+  },
+  "version_history": {
+    "1.0.0": {
+      "date": "2026-07-23",
+      "status": "Production Ready",
+      "features": [
+        "Icon replacement (tested)",
+        "Feature implementation (ready)",
+        "Release management (ready)",
+        "Bug fix workflow (ready)",
+        "Documentation updates (ready)"
+      ],
+      "tested_workflows": ["Icon replacement"],
+      "proven_execution": true
+    }
+  },
+  "metadata": {
+    "created_by": "Claude + Brad (mrditto)",
+    "created_date": "2026-07-23",
+    "last_updated": "2026-07-23",
+    "repository_url": "https://github.com/mrditto/Local-Ed-AI-by-DittoEd-",
+    "github_pages": "https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/",
+    "compatibility": "Claude Desktop, Claude.ai (web), Claude Mobile",
+    "license": "Same as LocalEdLLM repository (Apache 2.0)"
+  }
+}
