@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI use policy — Local Ed AI by DittoEd</title>
+<meta name="description" content="How Local Ed AI uses AI: which model runs, where it runs, what it will not do, and how output should be reviewed." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F2EDE1; --ink: #1E2A38; --ditto: #6B4C8C; --stamp: #C97A2B; --chalk: #FBF9F4;
+    --paper-line: #E3DCC8;
+    --font-display: "Zilla Slab", Georgia, serif;
+    --font-body: "Source Sans 3", system-ui, -apple-system, sans-serif;
+    --font-stencil: "Special Elite", "Courier New", monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); line-height: 1.65; }
+  a { color: var(--ditto); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 56px 24px 80px; }
+  .back { font-family: var(--font-stencil); font-size: 0.82rem; }
+  h1 { font-family: var(--font-display); font-size: 2rem; margin: 24px 0 6px; }
+  .updated { font-size: 0.85rem; opacity: 0.65; margin-bottom: 32px; }
+  h2 { font-family: var(--font-display); font-size: 1.2rem; margin: 34px 0 10px; }
+  p, li { font-size: 0.98rem; }
+  .callout {
+    background: var(--chalk); border-left: 4px solid var(--stamp);
+    border-radius: 4px; padding: 16px 18px; margin: 24px 0;
+    font-size: 0.92rem;
+  }
+  .nav-links { font-size: 0.9rem; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--paper-line); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Back to Local Ed AI</a>
+  <h1>AI use policy</h1>
+  <p class="updated">Local Ed AI by DittoEd · Last updated July 2026</p>
+
+  <div class="callout">
+    <strong>The short version:</strong> a general-purpose open-weight language model runs on your machine and drafts
+    text from what you give it. It is a drafting assistant. It does not decide anything, it is not trained on your
+    work, and everything it produces needs a human to read it before it goes anywhere.
+  </div>
+
+  <h2>What model runs, and where</h2>
+  <p>
+    Local Ed AI runs an open-weight language model locally through <a href="https://ollama.com/">Ollama</a>. The
+    default is Phi-4 Mini (3.8B parameters, quantized), chosen because it runs at usable speed on ordinary
+    school-issued laptops without a dedicated graphics card. You can select a different model during setup or later.
+  </p>
+  <p>
+    The model file lives on your machine and runs on your CPU. There is no API key, no hosted inference, and no
+    vendor on the other end of the connection.
+  </p>
+
+  <h2>How your input is used</h2>
+  <p>
+    Your prompts are sent to the local model, which generates a response. That is the entire lifecycle. Specifically:
+  </p>
+  <ul>
+    <li><strong>Your input is not used for training.</strong> The model weights are fixed and read-only. Nothing you type modifies them, and nothing is sent anywhere to train anything else.</li>
+    <li><strong>Your input is not reviewed by a human.</strong> There is no maintainer-side review queue, because there is no maintainer-side anything.</li>
+    <li><strong>Your input is not retained by any third party.</strong> It never reaches one.</li>
+  </ul>
+
+  <h2>What the application will not do</h2>
+  <p>These are product boundaries, not just guidance:</p>
+  <ul>
+    <li>It does not make eligibility determinations under IDEA or Section 504.</li>
+    <li>It does not make placement, services, or disciplinary determinations.</li>
+    <li>It does not evaluate, score, or grade a specific student.</li>
+    <li>It does not present itself as legal, medical, or psychological advice.</li>
+  </ul>
+  <p>
+    IEP drafts are watermarked as requiring full IEP team review. That watermark is deliberate and should not be
+    removed before the draft is reviewed.
+  </p>
+
+  <h2>Known limitations you should plan around</h2>
+  <ul>
+    <li>
+      <strong>It can be confidently wrong.</strong> Language models generate plausible text, not verified fact. A
+      3.8B model running on a laptop is meaningfully less capable than a large hosted model, and that tradeoff is
+      the price of the privacy guarantee. Check anything factual.
+    </li>
+    <li>
+      <strong>It does not know your student.</strong> It only knows what you typed into that conversation. A draft
+      that reads well may still be wrong for the child it is about.
+    </li>
+    <li>
+      <strong>It can reflect bias present in its training data.</strong> Pay particular attention to language
+      describing student behavior, ability, and family circumstances, which is exactly where biased phrasing does
+      the most harm in a permanent record.
+    </li>
+    <li>
+      <strong>It is not a compliance check.</strong> It does not verify that an IEP meets federal or Maryland
+      requirements. Your district's compliance process still applies in full.
+    </li>
+  </ul>
+
+  <h2>Recommended practice</h2>
+  <ul>
+    <li>Use it to get past the blank page, then edit in your own professional voice.</li>
+    <li>Read every generated line before it enters a student record or goes to a family.</li>
+    <li>Even though data never leaves your machine, use the minimum identifying detail necessary. Good habit, and it keeps drafts reusable.</li>
+    <li>Follow your district's AI policy. This tool is designed to make compliance easier, not to substitute for it.</li>
+  </ul>
+
+  <h2>For districts writing AI policy</h2>
+  <p>
+    Local Ed AI is intended to be a straightforward case under most district AI policies and under the Maryland
+    State Department of Education's AI guidance: the model is open-weight, inference is local, no student data is
+    transmitted or retained by any vendor, the source is auditable, and every output is human-reviewed by design.
+    Districts are welcome to reference this page directly in their tool inventories and vetting documentation.
+  </p>
+
+  <h2>Changes</h2>
+  <p>
+    This page may be updated as the project evolves, including if the default model changes. Material changes will
+    be noted with an updated date.
+  </p>
+
+  <p class="nav-links">
+    <a href="index.html">Home</a> ·
+    <a href="privacy.html">Privacy policy</a> ·
+    <a href="terms.html">Terms &amp; disclaimer</a>
+  </p>
+</div>
+</body>
+</html>
