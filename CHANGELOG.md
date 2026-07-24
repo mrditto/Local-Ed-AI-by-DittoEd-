@@ -2,6 +2,12 @@
 
 All notable changes to Local Ed AI are documented here.
 
+## 0.4.4 — 2026-07-24
+
+### Fixed
+
+- The Local Ed logo was only applied to the favicon, taskbar/window icon, and 128px icon in 0.4.3, leaving the 512px master icon, macOS `.icns`, and every Windows Store tile still showing the original placeholder icon. All icon assets now use the same logo, and a bug where two of the generated PNGs were slightly non-square is also fixed.
+
 ## 0.4.3 — 2026-07-22
 
 ### Fixed
