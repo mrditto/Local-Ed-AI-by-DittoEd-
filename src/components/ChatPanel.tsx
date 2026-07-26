@@ -11,10 +11,13 @@ import type { Prompt } from "../prompts";
 import { extractTextFromFile } from "../utils/extractText";
 import {
   buildPersonalizationPreamble,
+  languageInstruction,
   lengthInstruction,
   loadPersonalization,
   toneInstruction,
+  RESPONSE_LANGUAGE_NAMES,
   type Personalization,
+  type ResponseLanguage,
 } from "../config/personalization";
 import { createChatSession, getSessionBody, listSavedFiles, saveChatTurn, saveFileToLibrary } from "../storage/historyStore";
 import type { SavedFile, SessionAttachmentMeta, StoredChatMessage } from "../storage/types";
@@ -175,6 +178,7 @@ function ChatPanelBody({
   const [draft, setDraft] = useState(initialMessage ? "" : prompt.template);
   const [tone, setTone] = useState<Personalization["tone"]>(personalization.tone);
   const [length, setLength] = useState<Personalization["length"]>(personalization.length);
+  const [language, setLanguage] = useState<ResponseLanguage>(personalization.language);
   const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
   const [connectionMessage, setConnectionMessage] = useState<string>("");
   const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
@@ -187,6 +191,7 @@ function ChatPanelBody({
   const hasSentFirstSessionMessage = useRef(messages.length > 0);
   const lastAppliedTone = useRef<Personalization["tone"] | null>(null);
   const lastAppliedLength = useRef<Personalization["length"] | null>(null);
+  const lastAppliedLanguage = useRef<ResponseLanguage | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -217,6 +222,7 @@ function ChatPanelBody({
         const personalizationPreamble = buildPersonalizationPreamble(personalization, {
           tone,
           length,
+          language,
         });
         if (messagePreamble) {
           hiddenPrefixParts.push(`${messagePreamble}\n\n`);
@@ -229,15 +235,21 @@ function ChatPanelBody({
         }
         lastAppliedTone.current = tone;
         lastAppliedLength.current = length;
+        lastAppliedLanguage.current = language;
       } else {
         const toneChanged = lastAppliedTone.current !== tone;
         const lengthChanged = lastAppliedLength.current !== length;
-        if (toneChanged || lengthChanged) {
-          hiddenPrefixParts.push(
-            `(From now on: ${toneInstruction(tone)} ${lengthInstruction(length)}) `,
-          );
+        const languageChanged = lastAppliedLanguage.current !== language;
+        if (toneChanged || lengthChanged || languageChanged) {
+          const instructionParts = [toneInstruction(tone), lengthInstruction(length)];
+          const languageLine = languageInstruction(language);
+          if (languageLine) {
+            instructionParts.push(languageLine);
+          }
+          hiddenPrefixParts.push(`(From now on: ${instructionParts.join(" ")}) `);
           lastAppliedTone.current = tone;
           lastAppliedLength.current = length;
+          lastAppliedLanguage.current = language;
         }
       }
       if (attachmentPrefix) {
@@ -250,7 +262,7 @@ function ChatPanelBody({
       };
       return sendMessage(text, sendOptions);
     },
-    [length, messagePreamble, personalization, sendMessage, tone],
+    [language, length, messagePreamble, personalization, sendMessage, tone],
   );
 
   useEffect(() => {
@@ -400,6 +412,21 @@ function ChatPanelBody({
             <option value="short">Short</option>
             <option value="standard">Standard</option>
             <option value="detailed">Detailed</option>
+          </select>
+        </div>
+        <div className="settings-field chat-personalization-field">
+          <label htmlFor="chat-language">Response language</label>
+          <select
+            id="chat-language"
+            value={language}
+            onChange={(e) => setLanguage(e.currentTarget.value as ResponseLanguage)}
+            disabled={connectionState !== "ok" || isSending}
+          >
+            {Object.entries(RESPONSE_LANGUAGE_NAMES).map(([code, name]) => (
+              <option key={code} value={code}>
+                {name}
+              </option>
+            ))}
           </select>
         </div>
       </div>

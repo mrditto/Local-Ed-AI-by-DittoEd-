@@ -1,8 +1,12 @@
 import { useState } from "react";
 import {
+  applyTextSize,
   loadPersonalization,
   savePersonalization,
+  RESPONSE_LANGUAGE_NAMES,
   type Personalization,
+  type ResponseLanguage,
+  type TextSize,
 } from "../config/personalization";
 import { Button } from "./ui/Button";
 
@@ -18,7 +22,15 @@ export function PersonalizePanel({ onDone }: PersonalizePanelProps) {
   const [school, setSchool] = useState(initial.school);
   const [tone, setTone] = useState<Personalization["tone"]>(initial.tone);
   const [length, setLength] = useState<Personalization["length"]>(initial.length);
+  const [language, setLanguage] = useState<ResponseLanguage>(initial.language);
+  const [textSize, setTextSize] = useState<TextSize>(initial.textSize);
   const [saved, setSaved] = useState(false);
+
+  function handleTextSizeChange(next: TextSize) {
+    markDirty();
+    setTextSize(next);
+    applyTextSize(next);
+  }
 
   function markDirty() {
     if (saved) setSaved(false);
@@ -32,6 +44,8 @@ export function PersonalizePanel({ onDone }: PersonalizePanelProps) {
       school: school.trim(),
       tone,
       length,
+      language,
+      textSize,
     });
     setSaved(true);
   }
@@ -131,6 +145,44 @@ export function PersonalizePanel({ onDone }: PersonalizePanelProps) {
           <option value="standard">Standard</option>
           <option value="detailed">Detailed</option>
         </select>
+      </div>
+
+      <div className="settings-field">
+        <label htmlFor="personalize-language">Response language</label>
+        <select
+          id="personalize-language"
+          value={language}
+          onChange={(e) => {
+            markDirty();
+            setLanguage(e.currentTarget.value as ResponseLanguage);
+          }}
+        >
+          {Object.entries(RESPONSE_LANGUAGE_NAMES).map(([code, langName]) => (
+            <option key={code} value={code}>
+              {langName}
+            </option>
+          ))}
+        </select>
+        <span className="settings-hint">
+          The AI answers in this language; the app's own buttons and menus stay in English.
+          Quality depends on the local model you've picked — smaller models are noticeably
+          weaker outside English. The IEP Form Assistant always drafts in English, to match
+          Maryland's official form.
+        </span>
+      </div>
+
+      <div className="settings-field">
+        <label htmlFor="personalize-text-size">Text size</label>
+        <select
+          id="personalize-text-size"
+          value={textSize}
+          onChange={(e) => handleTextSizeChange(e.currentTarget.value as TextSize)}
+        >
+          <option value="small">Small</option>
+          <option value="standard">Standard</option>
+          <option value="large">Large</option>
+        </select>
+        <span className="settings-hint">Applies right away — Save just makes it stick.</span>
       </div>
 
       <div className="settings-actions">

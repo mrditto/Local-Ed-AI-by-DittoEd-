@@ -1,3 +1,20 @@
+export type ResponseLanguage = "en" | "es" | "fr" | "ht" | "vi" | "zh" | "ar" | "pt" | "ko" | "ru";
+
+export const RESPONSE_LANGUAGE_NAMES: Record<ResponseLanguage, string> = {
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+  ht: "Haitian Creole",
+  vi: "Vietnamese",
+  zh: "Chinese (Simplified)",
+  ar: "Arabic",
+  pt: "Portuguese",
+  ko: "Korean",
+  ru: "Russian",
+};
+
+export type TextSize = "small" | "standard" | "large";
+
 export interface Personalization {
   name: string;
   preferredName: string;
@@ -5,6 +22,10 @@ export interface Personalization {
   school: string;
   tone: "professional" | "friendly" | "casual";
   length: "short" | "standard" | "detailed";
+  /** Language the AI should respond in. Display/UI text is unaffected. */
+  language: ResponseLanguage;
+  /** Display-only preference — scales the whole app's text, never sent to the AI. */
+  textSize: TextSize;
 }
 
 const STORAGE_KEY = "educatorllm-personalization";
@@ -16,6 +37,8 @@ const defaultPersonalization: Personalization = {
   school: "",
   tone: "professional",
   length: "standard",
+  language: "en",
+  textSize: "standard",
 };
 
 function isTone(value: unknown): value is Personalization["tone"] {
@@ -24,6 +47,20 @@ function isTone(value: unknown): value is Personalization["tone"] {
 
 function isLength(value: unknown): value is Personalization["length"] {
   return value === "short" || value === "standard" || value === "detailed";
+}
+
+function isResponseLanguage(value: unknown): value is ResponseLanguage {
+  return typeof value === "string" && value in RESPONSE_LANGUAGE_NAMES;
+}
+
+function isTextSize(value: unknown): value is TextSize {
+  return value === "small" || value === "standard" || value === "large";
+}
+
+/** Applies the text-size preference to the whole app. Safe to call before the
+ * first render (e.g. in main.tsx) to avoid a flash of the wrong size. */
+export function applyTextSize(textSize: TextSize): void {
+  document.documentElement.dataset.textSize = textSize;
 }
 
 export function loadPersonalization(): Personalization {
@@ -41,6 +78,8 @@ export function loadPersonalization(): Personalization {
         school: typeof parsed.school === "string" ? parsed.school : defaultPersonalization.school,
         tone: isTone(parsed.tone) ? parsed.tone : defaultPersonalization.tone,
         length: isLength(parsed.length) ? parsed.length : defaultPersonalization.length,
+        language: isResponseLanguage(parsed.language) ? parsed.language : defaultPersonalization.language,
+        textSize: isTextSize(parsed.textSize) ? parsed.textSize : defaultPersonalization.textSize,
       };
     }
   } catch {
@@ -64,6 +103,11 @@ export function toneInstruction(tone: Personalization["tone"]): string {
   }
 }
 
+export function languageInstruction(language: ResponseLanguage): string {
+  if (language === "en") return "";
+  return `Respond in ${RESPONSE_LANGUAGE_NAMES[language]}, not English.`;
+}
+
 export function lengthInstruction(length: Personalization["length"]): string {
   switch (length) {
     case "short":
@@ -80,6 +124,7 @@ export function buildPersonalizationPreamble(
   overrides?: {
     tone?: Personalization["tone"];
     length?: Personalization["length"];
+    language?: ResponseLanguage;
   },
 ): string {
   const name = personalization.name.trim();
@@ -88,13 +133,15 @@ export function buildPersonalizationPreamble(
   const school = personalization.school.trim();
   const tone = overrides?.tone ?? personalization.tone;
   const length = overrides?.length ?? personalization.length;
+  const language = overrides?.language ?? personalization.language;
   const isDefault =
     name.length === 0 &&
     preferredName.length === 0 &&
     role.length === 0 &&
     school.length === 0 &&
     tone === "professional" &&
-    length === "standard";
+    length === "standard" &&
+    language === "en";
 
   if (isDefault) {
     return "";
@@ -117,6 +164,10 @@ export function buildPersonalizationPreamble(
 
   lines.push(toneInstruction(tone));
   lines.push(lengthInstruction(length));
+  const languageLine = languageInstruction(language);
+  if (languageLine) {
+    lines.push(languageLine);
+  }
 
   return lines.join(" ");
 }
