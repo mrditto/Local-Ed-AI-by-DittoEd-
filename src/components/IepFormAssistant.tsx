@@ -64,10 +64,21 @@ export function IepFormAssistant({ onBack, resumeSessionId }: IepFormAssistantPr
   const [isLoadingSession, setIsLoadingSession] = useState(Boolean(resumeSessionId));
   const [isPrinting, setIsPrinting] = useState(false);
   const [draftingKey, setDraftingKey] = useState<string | null>(null);
+  const [isDraftQueued, setIsDraftQueued] = useState(false);
   const [draftError, setDraftError] = useState<string>("");
   const [exportMessage, setExportMessage] = useState<string>("");
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const sessionIdRef = useRef<string | null>(resumeSessionId ?? null);
+
+  // Cancels an in-flight "Draft with AI" call if this view unmounts (e.g.
+  // navigating back) — otherwise it keeps streaming and burning CPU in the
+  // background even though nothing here is listening to it anymore.
+  const draftAbortControllerRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => {
+      draftAbortControllerRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (!resumeSessionId) return;
@@ -206,6 +217,7 @@ export function IepFormAssistant({ onBack, resumeSessionId }: IepFormAssistantPr
     setDraftError("");
     setExportMessage("");
     setDraftingKey(key);
+    setIsDraftQueued(false);
 
     const studentName = `${String(studentSectionValues.studentFirstName ?? "").trim()} ${String(
       studentSectionValues.studentLastName ?? "",
@@ -220,10 +232,24 @@ export function IepFormAssistant({ onBack, resumeSessionId }: IepFormAssistantPr
       `Teacher seed notes:\n${seed}\n\n` +
       "Return only the drafted field text.";
 
-    const result = await sendChat([{ role: "user", content: prompt }]);
+    const controller = new AbortController();
+    draftAbortControllerRef.current = controller;
+
+    const result = await sendChat([{ role: "user", content: prompt }], {
+      signal: controller.signal,
+      onQueued: () => setIsDraftQueued(true),
+    });
+
+    draftAbortControllerRef.current = null;
     setDraftingKey(null);
+    setIsDraftQueued(false);
 
     if (!result.ok) {
+      if (result.error === "cancelled") {
+        // This view was navigated away from mid-draft; nothing left to show
+        // the result to.
+        return;
+      }
       setDraftError(result.message);
       return;
     }
@@ -390,7 +416,11 @@ export function IepFormAssistant({ onBack, resumeSessionId }: IepFormAssistantPr
             disabled={draftingKey !== null}
             onClick={() => handleDraftWithAi(activeSection, field, itemIndex)}
           >
-            {draftingKey === narrativeDraftKey ? "Drafting..." : "Draft with AI"}
+            {draftingKey === narrativeDraftKey
+              ? isDraftQueued
+                ? "Waiting…"
+                : "Drafting..."
+              : "Draft with AI"}
           </Button>
         </div>
         <textarea

@@ -19,6 +19,7 @@ export type OllamaErrorKind =
   | "timeout"
   | "model_missing"
   | "model_error"
+  | "cancelled"
   | "unknown";
 
 export interface PullProgressUpdate {
@@ -64,6 +65,7 @@ interface OllamaLineStreamPayload {
 
 const NOT_CONFIGURED_MESSAGE =
   "Local Ed AI isn't set up yet — open Settings and add your Ollama address and model.";
+const CANCELLED_MESSAGE = "Cancelled.";
 const OLLAMA_INSTALLER_BASE_URL = "https://ollama.com";
 const OLLAMA_INSTALLER_PATH = "/download/OllamaSetup.exe";
 
@@ -114,6 +116,37 @@ function extractModelNames(data: unknown): string[] {
 
 function generateRequestId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+// Local inference is CPU-bound: two generations running at once (e.g. a
+// chat reply still streaming in the background after its panel was closed,
+// plus a fresh one started from another panel) can saturate every core and
+// starve the rest of the machine. This queue serializes every sendChat call
+// app-wide so only one generation ever runs at a time, no matter which
+// panel triggered it. Each queued task always resolves (never rejects) so a
+// single failed/cancelled call can't wedge the chain for callers behind it.
+let chatQueueTail: Promise<void> = Promise.resolve();
+let chatQueueSize = 0;
+
+async function enqueueChatTask<T>(task: () => Promise<T>): Promise<T> {
+  chatQueueSize++;
+  const ticket = chatQueueTail;
+  let release!: () => void;
+  chatQueueTail = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  try {
+    await ticket;
+    return await task();
+  } finally {
+    chatQueueSize--;
+    release();
+  }
+}
+
+function isChatQueueBusy(): boolean {
+  return chatQueueSize > 0;
 }
 
 function toErrorMessage(err: unknown, fallback: string): string {
@@ -184,7 +217,12 @@ async function invokeOllamaLineStream(options: {
   requestId: string;
   timeoutMs: number;
   onLine: (line: string) => void;
+  signal?: AbortSignal;
 }): Promise<void> {
+  if (options.signal?.aborted) {
+    throw new Error(CANCELLED_MESSAGE);
+  }
+
   let done = false;
   let completeResolve: (() => void) | null = null;
   let completeReject: ((error: Error) => void) | null = null;
@@ -215,6 +253,15 @@ async function invokeOllamaLineStream(options: {
     clearIdleTimer();
     completeReject?.(error);
   };
+
+  const onAbort = () => {
+    finishError(new Error(CANCELLED_MESSAGE));
+    // Best-effort: tell the backend to stop reading/streaming so the
+    // abandoned request stops competing for CPU. The frontend has already
+    // stopped waiting on it either way.
+    invoke("cancel_ollama_stream", { requestId: options.requestId }).catch(() => {});
+  };
+  options.signal?.addEventListener("abort", onAbort, { once: true });
 
   // Idle timeout: reset on every line received so long-running-but-active
   // generations (e.g. a full IEP with many sections) aren't killed by a
@@ -269,6 +316,7 @@ async function invokeOllamaLineStream(options: {
   } finally {
     clearIdleTimer();
     unlisten();
+    options.signal?.removeEventListener("abort", onAbort);
   }
 }
 
@@ -488,11 +536,10 @@ export async function checkConnection(): Promise<OllamaResult<void>> {
   return { ok: true, value: undefined };
 }
 
-export async function sendChat(messages: ChatRequestMessage[]): Promise<OllamaResult<string>> {
-  if (!isConfigured()) {
-    return { ok: false, error: "not_configured", message: NOT_CONFIGURED_MESSAGE };
-  }
-
+async function sendChatNow(
+  messages: ChatRequestMessage[],
+  signal: AbortSignal | undefined,
+): Promise<OllamaResult<string>> {
   const settings = loadSettings();
   const requestId = generateRequestId("chat");
   let assistantText = "";
@@ -509,6 +556,7 @@ export async function sendChat(messages: ChatRequestMessage[]): Promise<OllamaRe
       }),
       requestId,
       timeoutMs: requestTimeoutMs,
+      signal,
       onLine: (line) => {
         const event = JSON.parse(line) as ChatStreamEvent;
 
@@ -534,6 +582,10 @@ export async function sendChat(messages: ChatRequestMessage[]): Promise<OllamaRe
     return { ok: true, value: assistantText };
   } catch (err) {
     const message = toErrorMessage(err, "Couldn't reach Ollama.");
+
+    if (message === CANCELLED_MESSAGE) {
+      return { ok: false, error: "cancelled", message: CANCELLED_MESSAGE };
+    }
 
     if (message.startsWith("MODEL_ERROR:")) {
       return {
@@ -561,4 +613,28 @@ export async function sendChat(messages: ChatRequestMessage[]): Promise<OllamaRe
 
     return classifyConnectionError(message, "The request took too long. The model may be overloaded — try again.");
   }
+}
+
+export async function sendChat(
+  messages: ChatRequestMessage[],
+  options?: {
+    /** Aborted when the caller (e.g. a chat panel) unmounts mid-generation. */
+    signal?: AbortSignal;
+    /** Fired synchronously if another generation is already running/queued app-wide. */
+    onQueued?: () => void;
+  },
+): Promise<OllamaResult<string>> {
+  if (!isConfigured()) {
+    return { ok: false, error: "not_configured", message: NOT_CONFIGURED_MESSAGE };
+  }
+
+  if (options?.signal?.aborted) {
+    return { ok: false, error: "cancelled", message: CANCELLED_MESSAGE };
+  }
+
+  if (isChatQueueBusy()) {
+    options?.onQueued?.();
+  }
+
+  return enqueueChatTask(() => sendChatNow(messages, options?.signal));
 }

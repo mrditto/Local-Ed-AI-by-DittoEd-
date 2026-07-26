@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { sendChat, type ChatRequestMessage, type OllamaErrorKind } from "../api/ollama";
 import type { SessionAttachmentMeta } from "../storage/types";
 
@@ -35,10 +35,22 @@ function newId(): string {
 export function useChat(options?: UseChatOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => options?.initialState?.messages ?? []);
   const [isSending, setIsSending] = useState(false);
+  const [isQueued, setIsQueued] = useState(false);
   const [lastErrorKind, setLastErrorKind] = useState<OllamaErrorKind | null>(null);
   const outgoingHistoryRef = useRef<ChatRequestMessage[]>(options?.initialState?.outgoingHistory ?? []);
   const onTurnCompleteRef = useRef(options?.onTurnComplete);
   onTurnCompleteRef.current = options?.onTurnComplete;
+
+  // Cancels an in-flight generation if this hook's owning component
+  // unmounts (e.g. the user navigates away mid-response) — otherwise the
+  // request keeps streaming and burning CPU in the background even though
+  // nothing is listening to it anymore.
+  const abortControllerRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   // Authoritative synchronous copy of the transcript. React 18 batches state
   // updates even inside async functions, so a value captured via a
@@ -71,13 +83,31 @@ export function useChat(options?: UseChatOptions) {
     };
     appendMessage(userMessage);
     setIsSending(true);
+    setIsQueued(false);
 
     const conversation: ChatRequestMessage[] = [
       ...outgoingHistoryRef.current,
       { role: "user", content: outgoingText },
     ];
 
-    const result = await sendChat(conversation);
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    const result = await sendChat(conversation, {
+      signal: controller.signal,
+      onQueued: () => setIsQueued(true),
+    });
+
+    abortControllerRef.current = null;
+    setIsQueued(false);
+
+    if (result.ok === false && result.error === "cancelled") {
+      // The panel was unmounted mid-generation; there's nothing left to
+      // show the abandoned response to, and it was never going to be saved.
+      setIsSending(false);
+      return;
+    }
+
     outgoingHistoryRef.current = conversation;
 
     let finalMessages: ChatMessage[];
@@ -114,5 +144,5 @@ export function useChat(options?: UseChatOptions) {
     outgoingHistoryRef.current = [];
   }, []);
 
-  return { messages, isSending, lastErrorKind, sendMessage, reset };
+  return { messages, isSending, isQueued, lastErrorKind, sendMessage, reset };
 }

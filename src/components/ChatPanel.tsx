@@ -139,7 +139,7 @@ function ChatPanelBody({
   // first createChatSession promise resolves.
   const sessionCreationRef = useRef<Promise<string> | null>(null);
 
-  const { messages, isSending, sendMessage, reset } = useChat({ initialState });
+  const { messages, isSending, isQueued, sendMessage, reset } = useChat({ initialState });
 
   // Persist the full transcript straight from the live `messages` array
   // whenever it changes. Saving from `messages` (rather than a turn-complete
@@ -369,7 +369,9 @@ function ChatPanelBody({
             {msg.role === "assistant" && prompt.category === "sped" && <VerifyFooter />}
           </div>
         ))}
-        {isSending && <Spinner label="Thinking…" />}
+        {isSending && (
+          <Spinner label={isQueued ? "Waiting for another response to finish…" : "Thinking…"} />
+        )}
         <div ref={bottomRef} />
       </div>
 

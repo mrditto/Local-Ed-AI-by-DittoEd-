@@ -1,9 +1,18 @@
 use futures_util::StreamExt;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::Emitter;
+use tokio::sync::Notify;
+
+/// Tracks in-flight Ollama stream requests so the frontend can cancel one by
+/// request ID (e.g. when the panel that started it unmounts). Keyed by the
+/// same `request_id` the frontend generates per call.
+#[derive(Default)]
+struct CancelRegistry(Mutex<HashMap<String, Arc<Notify>>>);
 
 #[derive(Clone, Serialize)]
 struct DownloadProgressPayload {
@@ -22,6 +31,7 @@ struct OllamaStreamPayload {
 
 async fn stream_ollama_lines(
     window: tauri::Window,
+    cancel_notify: Arc<Notify>,
     event_name: &str,
     request_id: String,
     response: reqwest::Response,
@@ -29,7 +39,17 @@ async fn stream_ollama_lines(
     let mut stream = response.bytes_stream();
     let mut buffer = String::new();
 
-    while let Some(next) = stream.next().await {
+    loop {
+        // Race the next chunk against cancellation so an abandoned request
+        // (e.g. its panel was closed) stops reading — and drops the
+        // response, closing the connection to Ollama — even if it's still
+        // waiting on the very first byte, not just between chunks.
+        let next = tokio::select! {
+            _ = cancel_notify.notified() => break,
+            next = stream.next() => next,
+        };
+
+        let Some(next) = next else { break };
         let chunk = next.map_err(|err| format!("Ollama stream failed: {err}"))?;
         let text = String::from_utf8_lossy(&chunk);
         buffer.push_str(&text);
@@ -86,6 +106,23 @@ async fn stream_ollama_lines(
     Ok(())
 }
 
+fn register_cancel_notify(registry: &CancelRegistry, request_id: &str) -> Arc<Notify> {
+    let notify = Arc::new(Notify::new());
+    registry.0.lock().unwrap().insert(request_id.to_string(), notify.clone());
+    notify
+}
+
+fn unregister_cancel_notify(registry: &CancelRegistry, request_id: &str) {
+    registry.0.lock().unwrap().remove(request_id);
+}
+
+#[tauri::command]
+fn cancel_ollama_stream(registry: tauri::State<'_, CancelRegistry>, request_id: String) {
+    if let Some(notify) = registry.0.lock().unwrap().get(&request_id) {
+        notify.notify_one();
+    }
+}
+
 fn response_error_message(status: reqwest::StatusCode, body: &str) -> String {
     if body.trim().is_empty() {
         format!("Ollama responded with an unexpected status ({status}).")
@@ -117,6 +154,7 @@ async fn ollama_get_json(url: String) -> Result<String, String> {
 #[tauri::command]
 async fn ollama_chat_stream(
     window: tauri::Window,
+    cancel_registry: tauri::State<'_, CancelRegistry>,
     url: String,
     body_json: String,
     request_id: String,
@@ -124,6 +162,8 @@ async fn ollama_chat_stream(
     let body: serde_json::Value = serde_json::from_str(&body_json)
         .map_err(|err| format!("Invalid chat payload JSON: {err}"))?;
 
+    let notify = register_cancel_notify(&cancel_registry, &request_id);
+
     let response = reqwest::Client::new()
         .post(url)
         .json(&body)
@@ -134,15 +174,19 @@ async fn ollama_chat_stream(
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
+        unregister_cancel_notify(&cancel_registry, &request_id);
         return Err(response_error_message(status, &body));
     }
 
-    stream_ollama_lines(window, "ollama-chat-stream", request_id, response).await
+    let result = stream_ollama_lines(window, notify, "ollama-chat-stream", request_id.clone(), response).await;
+    unregister_cancel_notify(&cancel_registry, &request_id);
+    result
 }
 
 #[tauri::command]
 async fn ollama_pull_stream(
     window: tauri::Window,
+    cancel_registry: tauri::State<'_, CancelRegistry>,
     url: String,
     body_json: String,
     request_id: String,
@@ -150,6 +194,8 @@ async fn ollama_pull_stream(
     let body: serde_json::Value = serde_json::from_str(&body_json)
         .map_err(|err| format!("Invalid pull payload JSON: {err}"))?;
 
+    let notify = register_cancel_notify(&cancel_registry, &request_id);
+
     let response = reqwest::Client::new()
         .post(url)
         .json(&body)
@@ -160,10 +206,13 @@ async fn ollama_pull_stream(
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
+        unregister_cancel_notify(&cancel_registry, &request_id);
         return Err(response_error_message(status, &body));
     }
 
-    stream_ollama_lines(window, "ollama-pull-stream", request_id, response).await
+    let result = stream_ollama_lines(window, notify, "ollama-pull-stream", request_id.clone(), response).await;
+    unregister_cancel_notify(&cancel_registry, &request_id);
+    result
 }
 
 #[tauri::command]
@@ -237,10 +286,12 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .manage(CancelRegistry::default())
         .invoke_handler(tauri::generate_handler![
             ollama_get_json,
             ollama_chat_stream,
             ollama_pull_stream,
+            cancel_ollama_stream,
             download_ollama_installer,
             launch_ollama_installer
         ])
