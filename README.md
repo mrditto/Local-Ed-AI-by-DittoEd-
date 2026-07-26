@@ -15,7 +15,8 @@ A local, privacy-preserving AI assistant for educators — a prompt library and 
 - **Projects** — manually group related chats and drafts into named projects; ungrouping a project never deletes its contents.
 - **Pin & search** — pin the chats you return to often, and full-text search across titles and message content to find anything fast.
 - **Reusable file library** — documents you attach once are saved locally so you can reattach them to a future chat without re-uploading.
-- **Personalization** — set a preferred tone and response length that carries across chats.
+- **Personalization** — set a preferred tone, response length, and response language that carries across chats. The AI's response language is independent of the app's own interface, which stays in English; the IEP Form Assistant always drafts in English, to match Maryland's official form.
+- **Accessible by design** — full keyboard navigation with visible focus indicators throughout, an adjustable text size (small/standard/large), and respect for your OS's reduced-motion preference.
 - **Guided first run** — detects whether Ollama is installed, offers to install it, and helps you pick and download a starter model sized to your hardware.
 - **Fully offline after setup** — the only network calls this app ever makes are to your own local Ollama instance and, during first-run setup, to download Ollama/a model. No telemetry, no analytics, no cloud fallback.
 
@@ -26,6 +27,22 @@ A local, privacy-preserving AI assistant for educators — a prompt library and 
 - **Model runtime:** Ollama (phi4-mini primary), accessed directly via its local REST API
 - **Local storage:** IndexedDB (chat/IEP history, projects, saved files) — nothing is ever synced or uploaded
 - **License:** Apache 2.0
+
+## System requirements
+
+Local Ed AI itself is lightweight; the resource cost comes almost entirely from the local model you pick in first-run setup. All generation runs on CPU by default.
+
+| Tier | Model | Download size | Recommended RAM | Best for |
+|---|---|---|---|---|
+| Light | `llama3.2:1b` | ~1.3 GB | 8 GB or less | Older or low-memory computers; fastest, simpler responses |
+| Recommended (default) | `phi4-mini:latest` | ~2.5 GB | 8 GB+ | Best balance of quality and speed for most school machines |
+| Enhanced | `llama3.1:8b` | ~4.9 GB | 16 GB+ | Higher-quality responses, on a newer computer, with more patience |
+
+General guidance:
+
+- **RAM:** 8 GB minimum (Light/Recommended tiers); 16 GB recommended if you want the Enhanced tier or plan to keep other memory-heavy apps open at the same time.
+- **Disk space:** at least 5 GB free — covers the app itself, the Ollama runtime, and one downloaded model. Add the download size above for each additional model you try.
+- **CPU:** any machine from the last several years; generation speed scales with the model tier above, not with any special hardware.
 
 ## Prerequisites (one-time, per machine)
 
