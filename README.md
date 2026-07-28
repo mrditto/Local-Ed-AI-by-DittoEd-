@@ -4,6 +4,8 @@ Echoing the educator, not replacing the magic.
 
 A local, privacy-preserving AI assistant for educators — a prompt library and chat interface running entirely offline against [Ollama](https://ollama.com/) directly. Nothing you type, and no chat you save, ever leaves the machine.
 
+**Environmental impact:** there's no data center involved anywhere in this. Every response is generated on your own computer's CPU, the same way any other program on that machine uses electricity — running Local Ed AI doesn't draw meaningfully more power than normal computer use, and there's no server farm running on your behalf in the background.
+
 **Status:** Phase 1 (MVP) in progress. See `docs/PHASE1_IMPLEMENTATION_PLAN.md` for the full build plan, task breakdown, and done criteria.
 
 ## Features
@@ -15,8 +17,12 @@ A local, privacy-preserving AI assistant for educators — a prompt library and 
 - **Projects** — manually group related chats and drafts into named projects; ungrouping a project never deletes its contents.
 - **Pin & search** — pin the chats you return to often, and full-text search across titles and message content to find anything fast.
 - **Reusable file library** — documents you attach once are saved locally so you can reattach them to a future chat without re-uploading.
+- **Export & verify** — copy any response or export it straight to Word/PDF; Special Education prompts also show a "Verify against" list of authoritative resources to check the draft against.
 - **Personalization** — set a preferred tone, response length, and response language that carries across chats. The AI's response language is independent of the app's own interface, which stays in English; the IEP Form Assistant always drafts in English, to match Maryland's official form.
 - **Accessible by design** — full keyboard navigation with visible focus indicators throughout, an adjustable text size (small/standard/large), and respect for your OS's reduced-motion preference.
+- **Transparent AI labeling** — every AI-generated response is clearly marked "AI-assisted draft — review before use"; the IEP Form Assistant additionally watermarks exported documents as a draft requiring full team review.
+- **Bias-aware by default** — every request carries a standing instruction to avoid stereotypes and biased assumptions (race, ethnicity, gender, disability, language, immigration status, religion, socioeconomic status) and to stick to what the teacher actually wrote rather than filling in assumptions. This is prompt-level guidance, not a guarantee — pair it with your own review and the flagging tool below.
+- **Flag & report** — flag any response that's wrong, unhelpful, or biased (with an optional note), or report a technical error directly from where it happened. Both open a pre-filled email to the maintainer in your own email app — nothing is sent automatically, and nothing leaves the app until you hit Send yourself.
 - **Guided first run** — detects whether Ollama is installed, offers to install it, and helps you pick and download a starter model sized to your hardware.
 - **Fully offline after setup** — the only network calls this app ever makes are to your own local Ollama instance and, during first-run setup, to download Ollama/a model. No telemetry, no analytics, no cloud fallback.
 

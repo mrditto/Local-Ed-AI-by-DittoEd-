@@ -355,6 +355,38 @@ body {
   color: var(--color-error-text);
 }
 
+.chat-message-flag-form {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+.chat-message-flag-form label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.chat-message-flag-form textarea {
+  width: 100%;
+}
+.chat-message-flag-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.chat-message-flag-thanks {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--color-primary-hover);
+  font-weight: 600;
+}
+.chat-error-report {
+  margin-top: 6px;
+}
+
 .chat-input-row {
   display: flex;
   gap: 8px;
@@ -702,6 +734,9 @@ body {
 .wizard-header h2 {
   margin: 0;
   font-size: 1.1rem;
+}
+.history-report-btn {
+  margin-left: auto;
 }
 .wizard-form {
   background: var(--color-surface);
