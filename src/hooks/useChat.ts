@@ -10,6 +10,10 @@ export interface ChatMessage {
   attachment?: SessionAttachmentMeta;
   /** Wire content actually sent for this turn (hiddenPrefix + attachment + text). User messages only. */
   outgoingContent?: string;
+  /** Teacher flagged this response as a problem worth reporting. */
+  flagged?: boolean;
+  /** Optional note the teacher left when flagging. */
+  flagNote?: string;
 }
 
 interface SendMessageOptions {
@@ -65,6 +69,12 @@ export function useChat(options?: UseChatOptions) {
     messagesRef.current = next;
     setMessages(next);
     return next;
+  }, []);
+
+  const flagMessage = useCallback((id: string, note: string): void => {
+    const next = messagesRef.current.map((m) => (m.id === id ? { ...m, flagged: true, flagNote: note } : m));
+    messagesRef.current = next;
+    setMessages(next);
   }, []);
 
   const sendMessage = useCallback(async (text: string, sendOptions?: SendMessageOptions) => {
@@ -144,5 +154,5 @@ export function useChat(options?: UseChatOptions) {
     outgoingHistoryRef.current = [];
   }, []);
 
-  return { messages, isSending, isQueued, lastErrorKind, sendMessage, reset };
+  return { messages, isSending, isQueued, lastErrorKind, sendMessage, reset, flagMessage };
 }

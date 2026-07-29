@@ -4,7 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { join, tempDir } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
 
-export type ChatRole = "user" | "assistant";
+export type ChatRole = "system" | "user" | "assistant";
 
 export interface ChatRequestMessage {
   role: ChatRole;
@@ -68,6 +68,15 @@ const NOT_CONFIGURED_MESSAGE =
 const CANCELLED_MESSAGE = "Cancelled.";
 const OLLAMA_INSTALLER_BASE_URL = "https://ollama.com";
 const OLLAMA_INSTALLER_PATH = "/download/OllamaSetup.exe";
+
+// Sent as a system message with every generation, regardless of caller.
+// This is prompt-level steering, not enforcement — a small local model can
+// still ignore it. It's paired with the in-app "flag for review" control so
+// a human catches what slips through, rather than relying on this alone.
+const BIAS_MITIGATION_GUARDRAIL =
+  "When drafting content, avoid stereotypes or biased assumptions based on race, ethnicity, gender, disability, " +
+  "language, immigration status, religion, or socioeconomic status. Describe students, families, and staff " +
+  "fairly and respectfully, and stick to what the teacher's notes actually say rather than filling in assumptions.";
 
 function modelMissingMessage(model: string): string {
   return `The model ${model} isn't downloaded yet. Run 'ollama pull ${model}' or ask your administrator.`;
@@ -154,6 +163,16 @@ function toErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof Error && err.message.length > 0) return err.message;
   return fallback;
 }
+
+// Ollama's own backend failing to allocate memory while loading a model
+// shows up as a 500 with a raw llama.cpp error dump (e.g. "failed to
+// allocate buffer of size ...", "unable to allocate CPU_REPACK buffer").
+// It's not something the app did wrong — the machine didn't have enough
+// free RAM at that moment — so it gets a plain-language message instead of
+// the raw technical dump.
+const MEMORY_ALLOCATION_ERROR_PATTERN = /failed to allocate|cpu_repack|ggml_backend/i;
+const MEMORY_ALLOCATION_ERROR_MESSAGE =
+  "Your computer doesn't have enough free memory to load the model right now. Close some other programs and try again, or switch to a smaller model in Settings.";
 
 function classifyConnectionError(message: string, timeoutFallback: string): OllamaResult<never> {
   if (/timed out|timeout/i.test(message)) {
@@ -506,6 +525,10 @@ export async function pullModel(
       };
     }
 
+    if (MEMORY_ALLOCATION_ERROR_PATTERN.test(message)) {
+      return { ok: false, error: "unknown", message: MEMORY_ALLOCATION_ERROR_MESSAGE };
+    }
+
     if (/unexpected status/i.test(message)) {
       return { ok: false, error: "unknown", message };
     }
@@ -551,7 +574,7 @@ async function sendChatNow(
       url: `${normalizeBaseUrl(settings.baseUrl)}/api/chat`,
       bodyJson: JSON.stringify({
         model: settings.model,
-        messages,
+        messages: [{ role: "system", content: BIAS_MITIGATION_GUARDRAIL }, ...messages],
         stream: true,
       }),
       requestId,
@@ -601,6 +624,10 @@ async function sendChatNow(
         error: "model_missing",
         message: modelMissingMessage(settings.model),
       };
+    }
+
+    if (MEMORY_ALLOCATION_ERROR_PATTERN.test(message)) {
+      return { ok: false, error: "unknown", message: MEMORY_ALLOCATION_ERROR_MESSAGE };
     }
 
     if (/unexpected status/i.test(message)) {

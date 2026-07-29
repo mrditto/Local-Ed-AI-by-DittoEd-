@@ -21,6 +21,10 @@ export interface StoredChatMessage {
   outgoingContent?: string;
   attachment?: SessionAttachmentMeta;
   createdAt: number;
+  /** Teacher flagged this response as a problem worth reporting. */
+  flagged?: boolean;
+  /** Optional note the teacher left when flagging. */
+  flagNote?: string;
 }
 
 interface SessionRecordBase {

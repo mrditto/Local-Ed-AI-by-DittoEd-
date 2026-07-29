@@ -5,6 +5,7 @@ import { checkConnection, type ChatRequestMessage } from "../api/ollama";
 import { DisclaimerFooter } from "./DisclaimerFooter";
 import { VerifyFooter } from "./VerifyFooter";
 import { MessageActions } from "./MessageActions";
+import { ErrorReportLink } from "./ErrorReportLink";
 import { Button } from "./ui/Button";
 import { Spinner } from "./ui/Spinner";
 import type { Prompt } from "../prompts";
@@ -72,6 +73,8 @@ function toStoredMessages(messages: ChatMessage[]): StoredChatMessage[] {
     createdAt: m.createdAt,
     attachment: m.attachment,
     outgoingContent: m.outgoingContent,
+    flagged: m.flagged,
+    flagNote: m.flagNote,
   }));
 }
 
@@ -142,7 +145,7 @@ function ChatPanelBody({
   // first createChatSession promise resolves.
   const sessionCreationRef = useRef<Promise<string> | null>(null);
 
-  const { messages, isSending, isQueued, sendMessage, reset } = useChat({ initialState });
+  const { messages, isSending, isQueued, sendMessage, reset, flagMessage } = useChat({ initialState });
 
   // Persist the full transcript straight from the live `messages` array
   // whenever it changes. Saving from `messages` (rather than a turn-complete
@@ -375,10 +378,13 @@ function ChatPanelBody({
                 markdown={msg.text}
                 disabled={isSending}
                 defaultFilenameSeed={{ title: deriveChatSessionTitle(prompt, messages), fallbackText: msg.text }}
+                flagged={msg.flagged ?? false}
+                onFlag={(note) => flagMessage(msg.id, note)}
               />
             )}
             {msg.role === "assistant" && <DisclaimerFooter />}
             {msg.role === "assistant" && prompt.category === "sped" && <VerifyFooter />}
+            {msg.role === "error" && <ErrorReportLink errorText={msg.text} />}
           </div>
         ))}
         {isSending && (

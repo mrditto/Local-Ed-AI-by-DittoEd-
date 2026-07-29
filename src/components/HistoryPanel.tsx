@@ -17,6 +17,7 @@ import {
   setSessionPinned,
 } from "../storage/historyStore";
 import type { Project, SavedFile, SessionSummary } from "../storage/types";
+import { openFeedbackEmail } from "../utils/feedback";
 
 interface HistoryPanelProps {
   onBack: () => void;
@@ -66,6 +67,19 @@ export function HistoryPanel({ onBack, onResumeSession }: HistoryPanelProps) {
   const [sessionTitleDraft, setSessionTitleDraft] = useState("");
   const [movingSessionId, setMovingSessionId] = useState<string | null>(null);
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<string | null>(null);
+  const [isEmailingFeedback, setIsEmailingFeedback] = useState(false);
+  const [justEmailedFeedback, setJustEmailedFeedback] = useState(false);
+
+  async function handleReportIssue() {
+    setIsEmailingFeedback(true);
+    try {
+      await openFeedbackEmail({ subject: "Local Ed AI — feedback" });
+      setJustEmailedFeedback(true);
+      window.setTimeout(() => setJustEmailedFeedback(false), 6000);
+    } finally {
+      setIsEmailingFeedback(false);
+    }
+  }
 
   const refresh = useCallback(async (query: string) => {
     const trimmed = query.trim();
@@ -162,7 +176,18 @@ export function HistoryPanel({ onBack, onResumeSession }: HistoryPanelProps) {
           ← Back to library
         </Button>
         <h2>History</h2>
+        <Button
+          variant="ghost"
+          className="history-report-btn"
+          disabled={isEmailingFeedback}
+          onClick={() => void handleReportIssue()}
+        >
+          {isEmailingFeedback ? "Opening email…" : "✉️ Report an issue to Brad"}
+        </Button>
       </header>
+      {justEmailedFeedback && (
+        <p className="chat-message-flag-thanks">Thanks for letting us know — check your email app to send it.</p>
+      )}
 
       <div className="settings-field history-search-field">
         <input
