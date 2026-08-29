@@ -1,0 +1,16 @@
+{
+  "displayName": "educatorllm",
+  "publisher": "CN=1E8CAC31-13E1-436C-A5ED-F5F454796ADD",
+  "publisherDisplayName": "Ditto ED",
+  "capabilities": {
+    "general": []
+  },
+  "signing": {
+    "pfx": null,
+    "pfxPassword": null
+  },
+  "resourceIndex": {
+    "enabled": false,
+    "keepConfig": false
+  }
+}

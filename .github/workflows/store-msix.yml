@@ -1,0 +1,21 @@
+name: store-msix
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-msix:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - run: npm run tauri:windows:msix
+      - uses: actions/upload-artifact@v4
+        with:
+          name: local-ed-ai-msix
+          path: src-tauri/target/msix/
