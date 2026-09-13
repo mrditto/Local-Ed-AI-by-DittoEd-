@@ -112,6 +112,18 @@
   .download-hint { font-size: 0.82rem; color: var(--ink); opacity: 0.65; font-family: var(--font-stencil); }
   .download-alt { font-size: 0.88rem; margin-top: 6px; }
 
+  /* Product overview video */
+  .video-section { padding-top: 0; }
+  .video-card {
+    max-width: 760px; margin: 0 auto;
+    background: var(--chalk); border: 1px solid var(--ditto); border-radius: 4px;
+    box-shadow: 3px 3px 0 0 var(--ditto-light); overflow: hidden;
+  }
+  .video-card video { display: block; width: 100%; height: auto; background: var(--ink); }
+  .video-copy { padding: 16px 20px 18px; }
+  .video-copy h2 { font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 3px; }
+  .video-copy p { margin: 0; font-size: 0.92rem; opacity: 0.8; }
+
   @media (max-width: 480px) {
     .echo-wrap h1 { font-size: 2.1rem; }
     .hero { padding: 56px 0 40px; }
@@ -245,6 +257,19 @@
     </div>
   </div>
 </header>
+
+<section class="section wrap video-section" aria-labelledby="video-title">
+  <div class="video-card">
+    <video controls preload="metadata" poster="assets/unpacking-local-ed-ai-poster.svg">
+      <source src="assets/unpacking-local-ed-ai.mp4" type="video/mp4">
+      Your browser does not support embedded video. <a href="assets/unpacking-local-ed-ai.mp4" download>Download the Local Ed AI overview video</a>.
+    </video>
+    <div class="video-copy">
+      <h2 id="video-title">See Local Ed AI in action</h2>
+      <p>A quick walkthrough of a private, educator-first AI workspace that runs on your own computer.</p>
+    </div>
+  </div>
+</section>
 
 <div class="wrap section">
   <div class="privacy-section">
