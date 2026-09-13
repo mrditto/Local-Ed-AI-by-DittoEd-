@@ -10,7 +10,9 @@
     "tauri": "tauri",
     "lint": "eslint . --ext ts,tsx",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "tauri:windows:build": "tauri-windows-bundle build",
+    "tauri:windows:msix": "tauri build && tauri-windows-bundle build --runner npm"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -29,6 +31,7 @@
     "react-markdown": "^10.1.0"
   },
   "devDependencies": {
+    "@choochmeque/tauri-windows-bundle": "^0.1.28",
     "@eslint/js": "^9.9.0",
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.1.8",
