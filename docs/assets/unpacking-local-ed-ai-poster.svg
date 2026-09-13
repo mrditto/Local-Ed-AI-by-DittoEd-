@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-labelledby="title description">
+  <title id="title">Unpacking Local Ed AI video preview</title>
+  <desc id="description">A stylized preview card for the Local Ed AI product overview video.</desc>
+  <rect width="1280" height="720" fill="#1E2A38"/>
+  <rect x="80" y="80" width="1120" height="560" rx="12" fill="#F2EDE1"/>
+  <rect x="112" y="112" width="1056" height="496" rx="6" fill="#FBF9F4" stroke="#E3DCC8" stroke-width="4"/>
+  <text x="640" y="278" fill="#6B4C8C" font-family="Georgia, serif" font-size="82" font-weight="bold" text-anchor="middle">Local Ed AI</text>
+  <text x="640" y="350" fill="#1E2A38" font-family="Arial, sans-serif" font-size="34" text-anchor="middle">A private AI assistant for educators</text>
+  <circle cx="640" cy="470" r="62" fill="#C97A2B"/>
+  <path d="M620 432 L620 508 L682 470 Z" fill="#FBF9F4"/>
+  <text x="640" y="565" fill="#6B4C8C" font-family="Arial, sans-serif" font-size="26" text-anchor="middle">Watch the overview</text>
+</svg>
