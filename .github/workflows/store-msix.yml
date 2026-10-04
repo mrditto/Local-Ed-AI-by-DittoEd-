@@ -7,15 +7,32 @@ jobs:
   build-msix:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-      - run: npm ci
-      - run: npm run tauri:windows:msix
-      - uses: actions/upload-artifact@v4
+      - name: Set up Rust stable for x86_64-pc-windows-msvc
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Install dependencies
+        run: npm ci
+      - name: Type-check frontend
+        run: npm run typecheck
+      - name: Lint frontend
+        run: npm run lint
+      - name: Build frontend
+        run: npm run build
+      - name: Build MSIX package
+        run: npm run tauri:windows:msix
+      - name: List generated MSIX artifacts
+        run: Get-ChildItem -Recurse src-tauri/target/msix
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
         with:
           name: local-ed-ai-msix
           path: src-tauri/target/msix/
+          if-no-files-found: error

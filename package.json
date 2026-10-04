@@ -1,7 +1,7 @@
 {
   "name": "educatorllm",
   "private": true,
-  "version": "0.4.4",
+  "version": "0.5.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "tauri:windows:build": "tauri-windows-bundle build",
-    "tauri:windows:msix": "tauri build && tauri-windows-bundle build --runner npm"
+    "tauri:windows:msix": "tauri-windows-bundle build --runner npm --verbose"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -31,7 +31,7 @@
     "react-markdown": "^10.1.0"
   },
   "devDependencies": {
-    "@choochmeque/tauri-windows-bundle": "^0.1.28",
+    "@choochmeque/tauri-windows-bundle": "^0.2.0",
     "@eslint/js": "^9.9.0",
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.1.8",
@@ -45,5 +45,10 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.0.0",
     "vite": "^7.0.4"
+  },
+  "overrides": {
+    "@choochmeque/tauri-windows-bundle": {
+      "commander": "14.0.3"
+    }
   }
 }
