@@ -20,6 +20,40 @@ jobs:
           targets: x86_64-pc-windows-msvc
       - name: Install dependencies
         run: npm ci
+      - name: Validate Store package version
+        shell: pwsh
+        run: |
+          $storeVersion = [string](Get-Content src-tauri/gen/windows/bundle.config.json -Raw | ConvertFrom-Json).version
+          if ($storeVersion -notmatch '^\d+\.\d+\.\d+\.\d+$') {
+            throw "Store package version must have four numeric components; found '$storeVersion'."
+          }
+          if ($storeVersion -ne '1.0.0.0') {
+            throw "Store package version must be 1.0.0.0; found '$storeVersion'."
+          }
+
+          $components = @($storeVersion.Split('.') | ForEach-Object {
+            if ($_.Length -gt 5) {
+              throw "Store package version component exceeds 65535: '$_'."
+            }
+            [int]::Parse($_, [Globalization.CultureInfo]::InvariantCulture)
+          })
+          if ($components[0] -le 0) {
+            throw 'Store package version major component must be greater than zero.'
+          }
+          if ($components | Where-Object { $_ -gt 65535 }) {
+            throw 'Each Store package version component must be at most 65535.'
+          }
+          if ($components[3] -ne 0) {
+            throw 'Store package version revision component must be zero.'
+          }
+
+          $appVersions = @(
+            (Get-Content package.json -Raw | ConvertFrom-Json).version
+            (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          )
+          if ($appVersions | Where-Object { $_ -ne '0.5.5' }) {
+            throw "Application versions must remain 0.5.5; found '$($appVersions -join ', ')'."
+          }
       - name: Type-check frontend
         run: npm run typecheck
       - name: Lint frontend
@@ -28,6 +62,31 @@ jobs:
         run: npm run build
       - name: Build MSIX package
         run: npm run tauri:windows:msix
+      - name: Verify generated Store manifest version
+        shell: pwsh
+        run: |
+          $expectedVersion = '1.0.0.0'
+          $configuredVersion = [string](Get-Content src-tauri/gen/windows/bundle.config.json -Raw | ConvertFrom-Json).version
+          if ($configuredVersion -ne $expectedVersion) {
+            throw "Configured Store version '$configuredVersion' does not match required version '$expectedVersion'."
+          }
+          $manifestFile = Get-ChildItem -Path src-tauri/target/appx -Filter AppxManifest.xml -File -Recurse |
+            Where-Object { $_.FullName -match '[\\/]x64[\\/]AppxManifest\.xml$' } |
+            Select-Object -First 1
+          if (-not $manifestFile) {
+            throw 'Could not find the generated x64 AppxManifest.xml under src-tauri/target/appx.'
+          }
+
+          [xml]$manifest = Get-Content -LiteralPath $manifestFile.FullName -Raw
+          $identities = @($manifest.SelectNodes("//*[local-name()='Identity']"))
+          if ($identities.Count -ne 1) {
+            throw "Expected exactly one package Identity element, found $($identities.Count)."
+          }
+          $actualVersion = $identities[0].GetAttribute('Version')
+          if ($actualVersion -ne $expectedVersion) {
+            throw "Generated manifest version '$actualVersion' does not match Store package version '$expectedVersion'."
+          }
+          Write-Output "Verified generated x64 AppxManifest.xml version: $actualVersion"
       - name: List generated MSIX artifacts
         run: Get-ChildItem -Recurse src-tauri/target/msix
       - name: Upload MSIX artifact
