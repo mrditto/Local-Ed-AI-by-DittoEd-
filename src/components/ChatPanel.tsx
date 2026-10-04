@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useChat, type ChatMessage } from "../hooks/useChat";
-import { checkConnection, type ChatRequestMessage } from "../api/ollama";
+import { checkConnection, type ChatRequestMessage } from "../api/inference";
 import { DisclaimerFooter } from "./DisclaimerFooter";
 import { VerifyFooter } from "./VerifyFooter";
 import { MessageActions } from "./MessageActions";

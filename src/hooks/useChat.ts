@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { sendChat, type ChatRequestMessage, type OllamaErrorKind } from "../api/ollama";
+import { sendChat, type ChatRequestMessage, type InferenceErrorKind } from "../api/inference";
 import type { SessionAttachmentMeta } from "../storage/types";
 
 export interface ChatMessage {
@@ -40,7 +40,7 @@ export function useChat(options?: UseChatOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => options?.initialState?.messages ?? []);
   const [isSending, setIsSending] = useState(false);
   const [isQueued, setIsQueued] = useState(false);
-  const [lastErrorKind, setLastErrorKind] = useState<OllamaErrorKind | null>(null);
+  const [lastErrorKind, setLastErrorKind] = useState<InferenceErrorKind | null>(null);
   const outgoingHistoryRef = useRef<ChatRequestMessage[]>(options?.initialState?.outgoingHistory ?? []);
   const onTurnCompleteRef = useRef(options?.onTurnComplete);
   onTurnCompleteRef.current = options?.onTurnComplete;

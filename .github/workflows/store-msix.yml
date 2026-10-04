@@ -58,6 +58,8 @@ jobs:
         run: npm run typecheck
       - name: Lint frontend
         run: npm run lint
+      - name: Test inference queue and cancellation
+        run: npm run test:inference
       - name: Build frontend
         run: npm run build
       - name: Build MSIX package

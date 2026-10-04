@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { loadSettings, saveSettings } from "../config/anythingllm.config";
-import { checkConnection, listModels, pullModel } from "../api/ollama";
+import { checkConnection, listModels } from "../api/inference";
+import { pullModel } from "../api/ollama";
 import { modelTiers } from "../data/modelTiers";
 import { Button } from "./ui/Button";
 import { Spinner } from "./ui/Spinner";
