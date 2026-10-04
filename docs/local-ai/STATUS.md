@@ -33,3 +33,5 @@ Branch: codex/integrated-local-ai. Base: 7a457c62e7a240795bdd3a7b701e9363b8c17aa
 Implement Rust-owned integrated process lifecycle and authenticated loopback streaming adapter, app model selection/import/download UI, packaged runtime DLL resources and abnormal-exit cleanup. Preserve Ollama settings and transport behavior. Test clean installed MSIX without Ollama before declaring integrated inference delivered. RUNTIME.md records preparation commands and pending port-race/process-lifecycle requirements.
 
 No integrated app/MSIX produced. No pushes, releases, publication or Partner Center changes.
+
+Streaming adapter progress: added incremental SSE decoding for llama-server. Seven inference tests now pass, including all byte boundaries for Unicode/CRLF, hidden reasoning exclusion, malformed/error payloads and truncated completion detection. Typecheck and lint pass. Runtime process management and app activation remain pending.
