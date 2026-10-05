@@ -15,7 +15,8 @@
     "tauri:windows:msix": "tauri-windows-bundle build --runner npm --verbose",
     "test:inference": "node --experimental-vm-modules --test tests/inference.test.mjs tests/sse.test.mjs",
     "local-ai:runtime": "node scripts/download-local-ai-runtime.mjs",
-    "local-ai:model": "node scripts/download-local-ai-model.mjs"
+    "local-ai:model": "node scripts/download-local-ai-model.mjs",
+    "local-ai:stage": "powershell -NoProfile -File scripts/stage-local-ai-runtime.ps1"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

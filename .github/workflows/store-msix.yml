@@ -60,6 +60,8 @@ jobs:
         run: npm run lint
       - name: Test inference queue and cancellation
         run: npm run test:inference
+      - name: Test native runtime verification and process cleanup
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --lib integrated::tests
       - name: Build frontend
         run: npm run build
       - name: Build MSIX package

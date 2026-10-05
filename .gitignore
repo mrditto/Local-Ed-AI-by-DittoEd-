@@ -35,3 +35,4 @@ dist-ssr
 *.gguf
 /local-ai-data/
 /local-ai-private/
+/src-tauri/resources/local-ai-runtime/

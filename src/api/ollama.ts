@@ -60,7 +60,7 @@ const OLLAMA_INSTALLER_PATH = "/download/OllamaSetup.exe";
 // This is prompt-level steering, not enforcement — a small local model can
 // still ignore it. It's paired with the in-app "flag for review" control so
 // a human catches what slips through, rather than relying on this alone.
-const BIAS_MITIGATION_GUARDRAIL =
+export const BIAS_MITIGATION_GUARDRAIL =
   "When drafting content, avoid stereotypes or biased assumptions based on race, ethnicity, gender, disability, " +
   "language, immigration status, religion, or socioeconomic status. Describe students, families, and staff " +
   "fairly and respectfully, and stick to what the teacher's notes actually say rather than filling in assumptions.";

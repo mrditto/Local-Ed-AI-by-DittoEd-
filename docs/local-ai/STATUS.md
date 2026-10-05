@@ -35,3 +35,17 @@ Implement Rust-owned integrated process lifecycle and authenticated loopback str
 No integrated app/MSIX produced. No pushes, releases, publication or Partner Center changes.
 
 Streaming adapter progress: added incremental SSE decoding for llama-server. Seven inference tests now pass, including all byte boundaries for Unicode/CRLF, hidden reasoning exclusion, malformed/error payloads and truncated completion detection. Typecheck and lint pass. Runtime process management and app activation remain pending.
+
+## Native runtime and transport checkpoint
+
+- Added Rust-owned start/stop/readiness and authenticated integrated chat commands. Executable location is fixed to packaged resources; model IDs are allowlisted and model size/SHA-256 are verified before startup.
+- CPU server is loopback-only with a random key, one slot, 4096 context, four threads and reasoning/Web UI disabled. Startup checks process exit and readiness. Normal app exit stops its child; a Windows kill-on-close job provides abnormal-exit cleanup after assignment.
+- Added inactive integrated frontend adapter with queueing, request-scoped byte-stream parsing, cancellation handshake, idle timeout, listener cleanup and the existing system guardrail.
+- Added checksum-validated resource staging (32 runtime/DLL/license files) and optional Tauri integrated resource config. Default packaging config remains unchanged; resources and weights stay ignored by Git.
+- Cargo generated the dependency lock update for getrandom, sha2 and windows-sys. No manually guessed lock entries.
+- cargo check --offline: passed. cargo test --offline --locked --lib integrated::tests: four passed, one helper ignored. The real helper process started and stopped when its Windows job handle closed; initial nonzero-exit-code assumption was corrected.
+- npm run test:inference: nine passed. Typecheck/lint and frontend build with configLoader runner passed. git diff --check passed.
+- App model selection/import/download UI remains pending. Native integrated generation through an installed MSIX is not tested, and no new MSIX was generated. Active backend remains Ollama.
+- Port reservation still has a release/bind race: fail visibly on startup rather than connect to an unauthenticated service. Retry/rollback and full crash/start/stop race tests remain required before app activation. Windows job assignment occurs immediately after spawn; clean installed-package and abnormal parent-exit tests remain required.
+
+Next task: model storage/import and selection UI, safe backend switching and installed MSIX resource/generation verification. No pushes, release or Store submission changes.

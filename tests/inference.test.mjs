@@ -4,9 +4,9 @@ import vm from 'node:vm';
 import fs from 'node:fs/promises';
 import ts from 'typescript';
 
-async function harness() {
+async function harness(integrated = false) {
   const listeners = new Set(), requests = [], cancels = [];
-  const context = vm.createContext({ setTimeout, clearTimeout, console, Error });
+  const context = vm.createContext({ setTimeout, clearTimeout, console, Error, crypto: globalThis.crypto, TextDecoder });
   const modules = new Map();
   function mock(key, values) {
     modules.set(key, new vm.SyntheticModule(Object.keys(values), function () {
@@ -21,6 +21,12 @@ async function harness() {
   mock('@tauri-apps/api/core', { invoke: async (command, args) => {
     if (command === 'cancel_ollama_stream') cancels.push(args.requestId);
     if (command === 'ollama_chat_stream') requests.push(args);
+    if (command === 'integrated_chat_stream') {
+      return new Promise(resolve => {
+        requests.push({ ...args, finish: resolve });
+        for (const callback of listeners) callback({ payload: { requestId: args.requestId, bytes: [], started: true } });
+      });
+    }
   }});
   mock('@tauri-apps/api/event', { listen: async (_name, callback) => {
     listeners.add(callback); return () => listeners.delete(callback);
@@ -30,14 +36,16 @@ async function harness() {
   for (const [key, path] of [
     ['../ollama', 'src/api/ollama.ts'],
     ['./backend', 'src/api/inference/backend.ts'],
+    ['./sse', 'src/api/inference/sse.ts'],
+    ['integrated', 'src/api/inference/integrated.ts'],
     ['entry', 'src/api/inference/index.ts'],
   ]) modules.set(key, new vm.SourceTextModule(ts.transpileModule(await fs.readFile(path, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
   }).outputText, { context }));
-  const entry = modules.get('entry');
+  const entry = modules.get(integrated ? 'integrated' : 'entry');
   await entry.link(key => { assert.ok(modules.has(key), key); return modules.get(key); });
   await entry.evaluate();
-  return { api: entry.namespace, requests, cancels, listeners,
+  return { api: integrated ? entry.namespace.integratedBackend : entry.namespace, requests, cancels, listeners,
     emit: payload => { for (const callback of listeners) callback({ payload }); } };
 }
 async function until(predicate) {
@@ -101,4 +109,27 @@ test('empty responses and model failures do not wedge the queue', async () => {
   assert.equal((await second).error, 'model_error');
   const third = h.api.sendChat(messages); await until(() => h.requests.length === 3);
   reply(h, h.requests[2].requestId, 'Recovered'); assert.equal((await third).value, 'Recovered');
+});
+
+test('integrated adapter serializes and decodes native bytes with unchanged guardrail', async () => {
+  const h = await harness(true), chunks = [];
+  const first = h.api.sendChat(messages, { onChunk: text => chunks.push(text) });
+  const second = h.api.sendChat(messages);
+  await until(() => h.requests.length === 1);
+  assert.match(h.requests[0].messages[0].content, /avoid stereotypes/);
+  h.emit({ requestId: h.requests[0].requestId, bytes: Array.from(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Draft"}}]}\n\ndata: [DONE]\n\n')) });
+  h.requests[0].finish();
+  assert.equal((await first).value, 'Draft'); assert.deepEqual(chunks, ['Draft']);
+  await until(() => h.requests.length === 2);
+  h.emit({ requestId: h.requests[1].requestId, bytes: Array.from(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Next"}}]}\n\ndata: [DONE]\n\n')) });
+  h.requests[1].finish(); assert.equal((await second).value, 'Next');
+  assert.equal(h.listeners.size, 0);
+});
+
+test('integrated cancellation waits for native completion and cleans up', async () => {
+  const h = await harness(true), controller = new AbortController();
+  const result = h.api.sendChat(messages, { signal: controller.signal });
+  await until(() => h.requests.length === 1); controller.abort();
+  assert.deepEqual(h.cancels, [h.requests[0].requestId]); h.requests[0].finish();
+  assert.equal((await result).error, 'cancelled'); assert.equal(h.listeners.size, 0);
 });
