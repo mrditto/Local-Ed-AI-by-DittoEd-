@@ -310,3 +310,25 @@ Post-cancellation follow-up completed with Recovery works. and restored idle inp
 - Full verifier session 86712 passed production archive identity/assets/executable/all runtime inventory/bundled model checks. Negative test also passed: verifier refuses current development build receipt for production verification.
 - Preparing one local commit of authorized integrated-runtime/build/testing handoff work, including inherited implementation changes. Ignored model/runtime/private data are excluded. No remote push or merge authorized yet.
 - Next external validation requires user authorization to push the existing codex/integrated-local-ai branch and dispatch the manual integrated Windows workflow; this is source publication on a public repository, distinct from prior Store-upload permission. Fresh hosted runner may expose exact CRT staging issues. No certification clean pass, clean-machine installation or older-hardware support claimed.
+
+## October 13 authorized source push and hosted build
+
+- Bradley explicitly authorized pushing branch and running workflow. Pushed codex/integrated-local-ai at 67200e9a9bcbbcbb27e2c3998669f19aef8591ea to origin; no merge/default-branch update.
+- Dispatched store-msix.yml using codex/integrated-local-ai via GitHub Actions. Verified queued run 38485184009 pinned to commit 67200e9, integrated workflow name and selected branch: https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/actions/runs/38485184009 . No artifact or build pass yet.
+- Next check this same run once; inspect exact failing step/log if failed, or verify actual uploaded MSIX if successful. Do not dispatch duplicates while pending. No Store submission.
+
+## October 13 website update published to source
+
+- User explicitly requested updating https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/ . Created separate site-only checkout work/site-update from origin/master, branch codex/site-status. Published docs/index.html only to master at 7b6d06c; no integrated application source merged into master.
+- Added bundled Qwen3.5-4B/native runtime development status, actual local test scope, approximate candidate size, certification/older-hardware limitations, branch/build links and clear legacy download/video labels. Qualified absolute privacy/signing statements and fixed footer download anchor. Previewed locally in browser and checked diff; source commit pushed successfully.
+- Live Pages still showed old content immediately after push. Deployment verification pending; do not claim new page is live yet. Local preview server session 70540 can be stopped after verification. Integrated Windows build run remains 38485184009; check separately without confusing site deployment with app packaging.
+
+Website deployment verified: GitHub Pages workflow #28 completed successfully, and live homepage now visibly includes A built-in local model is coming, Qwen3.5-4B, updated October 13 status, not-passed-certification disclosure and legacy Ollama download label. Site-only master commit 7b6d06c is live. Local preview server stopped. Integrated app workflow #3 remains in progress at latest observed Actions listing; do not claim its artifact passed.
+
+## Hosted integrated build progress
+
+Run 38485184009, job 115596992374 remains in progress. GitHub connector confirms npm ci, typecheck, lint, inference transport/cancellation tests, native verification/process-cleanup tests, pinned runtime download, exact CRT staging, bundled model download/verification and unchanged app-version validation all succeeded. Hosted exact CRT availability is confirmed for this run. Production executable build is in progress; packaging/archive verification/artifact upload pending. Do not dispatch duplicates or claim generated hosted MSIX. Next check same job once after compilation finishes.
+
+## Hosted packaging line-ending failure diagnosed
+
+Run 38485184009 passed compilation/tests but failed packaging inventory for LLAMA-LICENSE.txt; no hosted MSIX uploaded. Windows Git checkout changed unpinned text line endings. Added .gitattributes preserving LF for LLAMA/LLVM notices and CRLF for QWEN notice, matching existing shipped inventory. Verified fresh checkout-index with core.autocrlf=true matches both license file lengths/SHA256 exactly. No inventory checks relaxed or runtime/model changes. PR #36 open at inspection, not merged. Next push correction and dispatch same branch workflow; no Store submission.
