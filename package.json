@@ -16,7 +16,10 @@
     "test:inference": "node --experimental-vm-modules --test tests/inference.test.mjs tests/sse.test.mjs",
     "local-ai:runtime": "node scripts/download-local-ai-runtime.mjs",
     "local-ai:model": "node scripts/download-local-ai-model.mjs",
-    "local-ai:stage": "powershell -NoProfile -File scripts/stage-local-ai-runtime.ps1"
+    "local-ai:stage": "pwsh -NoProfile -File scripts/stage-local-ai-runtime.ps1",
+    "build:integrated": "node scripts/build-integrated.mjs",
+    "tauri:integrated:build": "node scripts/build-integrated-release.mjs",
+    "tauri:integrated:msix": "pwsh -NoProfile -File scripts/package-integrated-msix.ps1"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

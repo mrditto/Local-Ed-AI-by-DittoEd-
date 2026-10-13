@@ -1,3 +1,4 @@
+param([string]$VcRedistDirectory)
 $ErrorActionPreference = 'Stop'
 $repository = Split-Path $PSScriptRoot -Parent
 $catalog = Get-Content (Join-Path $repository 'config/local-ai-artifacts.json') -Raw | ConvertFrom-Json
@@ -19,4 +20,18 @@ Get-ChildItem -LiteralPath $runtimeDirectory -File -Filter '*.dll' | ForEach-Obj
 }
 Copy-Item -LiteralPath (Join-Path $runtimeDirectory 'LICENSE-LLVM-OpenMP') -Destination $destination
 Copy-Item -LiteralPath (Join-Path $repository 'docs/local-ai/licenses/LLAMA-LICENSE.txt') -Destination $destination
+Copy-Item -LiteralPath (Join-Path $repository 'docs/local-ai/licenses/QWEN-LICENSE.txt') -Destination $destination
+# App-local C++ runtime for the pinned CPU engine. Do not copy DLLs from System32.
+if (-not $VcRedistDirectory) {
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+    $vsRoots = @(& $vswhere -all -products '*' -property installationPath)
+    $VcRedistDirectory = $vsRoots | ForEach-Object {
+        Join-Path $_ 'VC/Redist/MSVC/14.44.35112/x64/Microsoft.VC143.CRT'
+    } | Where-Object { Test-Path -LiteralPath $_ -PathType Container } | Select-Object -First 1
+    if (-not $VcRedistDirectory) { throw 'Provide -VcRedistDirectory for Visual Studio C++ redist 14.44.35112 x64.' }
+}
+$crtFiles = @(Get-ChildItem -LiteralPath $VcRedistDirectory -Filter '*.dll' -File)
+if ($crtFiles.Count -ne 10) { throw 'Expected the pinned MSVC x64 redistributable DLL set.' }
+foreach ($crtFile in $crtFiles) { Copy-Item -LiteralPath $crtFile.FullName -Destination $destination }
+[IO.File]::WriteAllText((Join-Path $destination 'MSVC-REDIST.txt'), "Distributable Code for Microsoft Visual Studio 2022 (Includes Utilities & BuildServer Files)`r`n`r`nFor the latest version of this Redist file, please visit https://aka.ms/vs/17/redist.txt.`r`n")
 Write-Output "Staged pinned runtime and DLLs in $destination"

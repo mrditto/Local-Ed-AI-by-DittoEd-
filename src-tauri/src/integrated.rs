@@ -3,6 +3,7 @@ use std::io::Read;
 use std::net::TcpListener;
 use std::path::Path;
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use tauri::Manager;
 
@@ -51,9 +52,14 @@ impl Drop for RuntimeProcess {
     }
 }
 #[derive(Default)]
-pub struct IntegratedRuntime(pub Mutex<Option<RuntimeProcess>>);
+pub struct IntegratedRuntime(
+    pub Mutex<Option<RuntimeProcess>>,
+    AtomicU64,
+    tokio::sync::Mutex<()>,
+);
 impl IntegratedRuntime {
     pub fn stop(&self) -> Result<(), String> {
+        self.1.fetch_add(1, Ordering::SeqCst);
         self.0
             .lock()
             .map_err(|_| "Runtime state unavailable.")?
@@ -78,6 +84,14 @@ fn model_artifact(id: &str) -> Result<(&'static str, u64, &'static str), String>
     }
 }
 fn verify_model(path: &Path, size: u64, expected: &str) -> Result<(), String> {
+    verify_model_cancel(path, size, expected, || false)
+}
+fn verify_model_cancel(
+    path: &Path,
+    size: u64,
+    expected: &str,
+    cancelled: impl Fn() -> bool,
+) -> Result<(), String> {
     let mut file = std::fs::File::open(path).map_err(|_| "Download or import this model first.")?;
     if file
         .metadata()
@@ -90,6 +104,9 @@ fn verify_model(path: &Path, size: u64, expected: &str) -> Result<(), String> {
     let mut hash = Sha256::new();
     let mut buffer = [0u8; 65536];
     loop {
+        if cancelled() {
+            return Err("Model verification cancelled.".into());
+        }
         let count = file
             .read(&mut buffer)
             .map_err(|_| "Couldn't verify model file.")?;
@@ -177,13 +194,9 @@ pub async fn start_integrated_runtime(
     app: tauri::AppHandle,
     model_id: String,
 ) -> Result<(), String> {
+    let epoch = app.state::<IntegratedRuntime>().1.load(Ordering::SeqCst);
     let (filename, size, hash) = model_artifact(&model_id)?;
-    let model = app
-        .path()
-        .app_local_data_dir()
-        .map_err(|_| "Couldn't locate model storage.")?
-        .join("models")
-        .join(filename);
+    let model = available_model_path(&app, filename, size)?;
     let executable = app
         .path()
         .resource_dir()
@@ -191,9 +204,18 @@ pub async fn start_integrated_runtime(
         .join("local-ai-runtime")
         .join("llama-server.exe");
     let verification_path = model.clone();
-    tauri::async_runtime::spawn_blocking(move || verify_model(&verification_path, size, hash))
-        .await
-        .map_err(|_| "Model verification failed.")??;
+    let verification_app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        verify_model_cancel(&verification_path, size, hash, || {
+            verification_app
+                .state::<IntegratedRuntime>()
+                .1
+                .load(Ordering::SeqCst)
+                != epoch
+        })
+    })
+    .await
+    .map_err(|_| "Model verification failed.")??;
     let client = reqwest::Client::builder()
         .no_proxy()
         .timeout(std::time::Duration::from_secs(1))
@@ -202,6 +224,9 @@ pub async fn start_integrated_runtime(
     let (base, key) = {
         let state = app.state::<IntegratedRuntime>();
         let mut process = state.0.lock().map_err(|_| "Runtime state unavailable.")?;
+        if state.1.load(Ordering::SeqCst) != epoch {
+            return Err("Runtime startup was cancelled.".into());
+        }
         if process.is_some() {
             return Err("Stop the active integrated model before switching models.".into());
         }
@@ -231,7 +256,7 @@ pub async fn start_integrated_runtime(
             }
         }
         if let Ok(response) = client
-            .get(format!("{base}/health"))
+            .get(format!("{base}/v1/models"))
             .bearer_auth(&key)
             .send()
             .await
@@ -435,5 +460,276 @@ mod tests {
         child.wait().unwrap();
         assert!(stopped.elapsed() < std::time::Duration::from_secs(5));
         std::fs::remove_file(ready).unwrap();
+    }
+}
+
+#[derive(serde::Serialize)]
+struct ModelStatus {
+    id: String,
+    filename: String,
+    bytes: u64,
+    installed: bool,
+}
+#[derive(serde::Serialize)]
+pub struct SetupStatus {
+    models: Vec<ModelStatus>,
+    selected: Option<String>,
+    active: Option<String>,
+}
+fn model_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    Ok(app
+        .path()
+        .app_local_data_dir()
+        .map_err(|_| "Couldn't locate model storage.")?
+        .join("models"))
+}
+// Read bundled weights in place without duplicating them into per-user storage.
+fn available_model_path(app: &tauri::AppHandle, filename: &str, bytes: u64) -> Result<std::path::PathBuf, String> {
+    let local = model_dir(app)?.join(filename);
+    if std::fs::metadata(&local).is_ok_and(|m| m.len() == bytes) { return Ok(local); }
+    let bundled = app.path().resource_dir().map_err(|_| "Couldn't locate bundled model.")?
+        .join("local-ai-models").join(filename);
+    if std::fs::metadata(&bundled).is_ok_and(|m| m.len() == bytes) { return Ok(bundled); }
+    Ok(local)
+}
+#[tauri::command]
+pub fn integrated_setup_status(app: tauri::AppHandle) -> Result<SetupStatus, String> {
+    let dir = model_dir(&app)?;
+    let mut models = Vec::new();
+    for id in ["qwen3.5-4b-q4-k-m", "qwen3.5-2b-q4-k-m"] {
+        let (filename, bytes, _) = model_artifact(id)?;
+        let installed = std::fs::metadata(available_model_path(&app, filename, bytes)?).is_ok_and(|m| m.len() == bytes);
+        models.push(ModelStatus {
+            id: id.into(),
+            filename: filename.into(),
+            bytes,
+            installed,
+        });
+    }
+    let selected = std::fs::read_to_string(dir.join("selected-model.txt"))
+        .ok()
+        .filter(|id| model_artifact(id).is_ok())
+        .or_else(|| models.iter().find(|m| m.id == "qwen3.5-4b-q4-k-m" && m.installed).map(|m| m.id.clone()));
+    let active = integrated_runtime_model(app.state::<IntegratedRuntime>())?;
+    Ok(SetupStatus {
+        models,
+        selected,
+        active,
+    })
+}
+#[tauri::command]
+pub fn cancel_integrated_setup(runtime: tauri::State<'_, IntegratedRuntime>) {
+    runtime.1.fetch_add(1, Ordering::SeqCst);
+    if let Ok(mut process) = runtime.0.lock() {
+        if process.as_ref().is_some_and(|p| !p.ready) {
+            process.take();
+        }
+    }
+}
+#[tauri::command]
+pub async fn import_integrated_model(
+    app: tauri::AppHandle,
+    model_id: String,
+    source: String,
+) -> Result<(), String> {
+    let (filename, size, hash) = model_artifact(&model_id)?;
+    let state = app.state::<IntegratedRuntime>();
+    let _operation = state
+        .2
+        .try_lock()
+        .map_err(|_| "Another model setup is running.")?;
+    let epoch = state.1.load(Ordering::SeqCst);
+    let dir = model_dir(&app)?;
+    let worker_app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::io::Write;
+        std::fs::create_dir_all(&dir).map_err(|_| "Couldn't create model folder.")?;
+        let destination = dir.join(filename);
+        // Never replace an existing valid model; keep originals and active weights intact.
+        if verify_model(&destination, size, hash).is_ok() {
+            return Ok(());
+        }
+        let staging = dir.join(format!("{filename}.importing"));
+        let result = (|| {
+            let mut input =
+                std::fs::File::open(&source).map_err(|_| "Couldn't open selected model.")?;
+            if input
+                .metadata()
+                .map_err(|_| "Couldn't inspect selected model.")?
+                .len()
+                != size
+            {
+                return Err(
+                    "This file has the wrong size. Choose the exact supported Q4_K_M GGUF.".into(),
+                );
+            }
+            let mut output = std::fs::File::create(&staging)
+                .map_err(|_| "Couldn't stage model. Check free disk space.")?;
+            let mut digest = Sha256::new();
+            let mut buffer = [0u8; 1024 * 1024];
+            loop {
+                if worker_app
+                    .state::<IntegratedRuntime>()
+                    .1
+                    .load(Ordering::SeqCst)
+                    != epoch
+                {
+                    return Err("Model import cancelled.".into());
+                }
+                let count = input
+                    .read(&mut buffer)
+                    .map_err(|_| "Couldn't read selected model.")?;
+                if count == 0 {
+                    break;
+                }
+                digest.update(&buffer[..count]);
+                output
+                    .write_all(&buffer[..count])
+                    .map_err(|_| "Couldn't copy model. Check free disk space.")?;
+            }
+            output
+                .sync_all()
+                .map_err(|_| "Couldn't save staged model.")?;
+            drop(output);
+            if format!("{:x}", digest.finalize()) != hash {
+                return Err("Model checksum mismatch. Existing models were preserved.".into());
+            }
+            if worker_app
+                .state::<IntegratedRuntime>()
+                .1
+                .load(Ordering::SeqCst)
+                != epoch
+            {
+                return Err("Model import cancelled.".into());
+            }
+            replace_staged(&staging, &destination)?;
+            Ok(())
+        })();
+        let _ = std::fs::remove_file(&staging);
+        result
+    })
+    .await
+    .map_err(|_| "Model import interrupted.")?
+}
+fn replace_staged(staging: &Path, destination: &Path) -> Result<(), String> {
+    let backup = destination.with_extension("previous");
+    if destination.exists() {
+        // A retained backup is evidence requiring recovery, never overwrite it.
+        if backup.exists() {
+            return Err("A previous model/setup backup exists. Preserve it and resolve recovery before replacing this file.".into());
+        }
+        std::fs::rename(destination, &backup)
+            .map_err(|_| "Couldn't preserve previous model/setup.")?;
+    }
+    if std::fs::rename(staging, destination).is_err() {
+        if backup.exists() {
+            let _ = std::fs::rename(&backup, destination);
+        }
+        return Err("Couldn't activate staged model/setup. Previous state was retained.".into());
+    }
+    // Models retain their old file. Small selection metadata is recoverable until the next successful change.
+    Ok(())
+}
+#[tauri::command]
+pub async fn select_integrated_model(
+    app: tauri::AppHandle,
+    model_id: String,
+) -> Result<(), String> {
+    let state = app.state::<IntegratedRuntime>();
+    let _operation = state
+        .2
+        .try_lock()
+        .map_err(|_| "Another model setup is running.")?;
+    let (filename, bytes, hash) = model_artifact(&model_id)?;
+    let epoch_before_verify = state.1.load(Ordering::SeqCst);
+    if !app
+        .state::<super::CancelRegistry>()
+        .0
+        .lock()
+        .map_err(|_| "Request state unavailable.")?
+        .is_empty()
+    {
+        return Err("Stop generating before switching models.".into());
+    }
+    let dir = model_dir(&app)?;
+    std::fs::create_dir_all(&dir).map_err(|_| "Could not create model settings folder.")?;
+    let path = available_model_path(&app, filename, bytes)?;
+    let verification_app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        verify_model_cancel(&path, bytes, hash, || {
+            verification_app
+                .state::<IntegratedRuntime>()
+                .1
+                .load(Ordering::SeqCst)
+                != epoch_before_verify
+        })
+    })
+    .await
+    .map_err(|_| "Verification interrupted.")??;
+    let previous = integrated_runtime_model(app.state::<IntegratedRuntime>())?;
+    if state.1.load(Ordering::SeqCst) != epoch_before_verify {
+        return Err("Model loading cancelled.".into());
+    }
+    if previous.as_deref() == Some(&model_id) {
+        return Ok(());
+    }
+    state.stop()?;
+    let epoch = state.1.load(Ordering::SeqCst);
+    if let Err(error) = start_integrated_runtime(app.clone(), model_id.clone()).await {
+        if state.1.load(Ordering::SeqCst) == epoch {
+            if let Some(old) = previous {
+                let _ = start_integrated_runtime(app.clone(), old).await;
+            }
+        }
+        return Err(error);
+    }
+    // Commit the selection only after the candidate loads successfully.
+    let staging = dir.join("selected-model.pending");
+    std::fs::write(&staging, model_id)
+        .map_err(|_| "Model loaded but selection couldn't be saved.")?;
+    let selection = dir.join("selected-model.txt");
+    // Selection is tiny metadata, not weights or teacher data. Keep one previous selection.
+    let backup = selection.with_extension("previous");
+    if backup.exists() {
+        std::fs::remove_file(&backup).map_err(|_| "Couldn't rotate selection backup.")?;
+    }
+    replace_staged(&staging, &selection)?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod setup_tests {
+    use super::*;
+    #[test]
+    fn cancelled_verification_rejects_valid_file() {
+        let path = std::env::temp_dir().join(format!("local-ed-cancel-{}", std::process::id()));
+        std::fs::write(&path, b"abc").unwrap();
+        assert!(verify_model_cancel(
+            &path,
+            3,
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            || true
+        )
+        .unwrap_err()
+        .contains("cancelled"));
+        std::fs::remove_file(path).unwrap();
+    }
+    #[test]
+    fn activation_failure_restores_original_and_success_retains_backup() {
+        let dir = std::env::temp_dir().join(format!("local-ed-activation-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let destination = dir.join("model.gguf");
+        let staging = dir.join("candidate");
+        std::fs::write(&destination, b"old").unwrap();
+        assert!(replace_staged(&staging, &destination).is_err());
+        assert_eq!(std::fs::read(&destination).unwrap(), b"old");
+        std::fs::write(&staging, b"new").unwrap();
+        replace_staged(&staging, &destination).unwrap();
+        assert_eq!(std::fs::read(&destination).unwrap(), b"new");
+        assert_eq!(
+            std::fs::read(destination.with_extension("previous")).unwrap(),
+            b"old"
+        );
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }

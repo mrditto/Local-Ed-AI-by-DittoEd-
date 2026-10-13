@@ -1,4 +1,8 @@
 {
+  "productName": "Local Ed AI Integrated Dev",
+  "identifier": "com.dittoed.localai.integrated.dev",
+  "app": { "windows": [{ "title": "Local Ed AI Integrated Dev", "width": 1100, "height": 750 }] },
+  "build": { "beforeBuildCommand": "npm run build:integrated" },
   "bundle": {
     "resources": {
       "resources/local-ai-runtime/": "local-ai-runtime/"

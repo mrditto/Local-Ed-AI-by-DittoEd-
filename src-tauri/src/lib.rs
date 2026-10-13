@@ -300,7 +300,11 @@ pub fn run() {
             integrated::start_integrated_runtime,
             integrated::stop_integrated_runtime,
             integrated::integrated_chat_stream,
-            integrated::integrated_runtime_model
+            integrated::integrated_runtime_model,
+            integrated::integrated_setup_status,
+            integrated::import_integrated_model,
+            integrated::select_integrated_model,
+            integrated::cancel_integrated_setup
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

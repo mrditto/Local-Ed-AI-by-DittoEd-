@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import fs from 'node:fs/promises';
 import ts from 'typescript';
 
-async function harness(integrated = false) {
+async function harness(integrated = false, integratedEntry = false) {
   const listeners = new Set(), requests = [], cancels = [];
   const context = vm.createContext({ setTimeout, clearTimeout, console, Error, crypto: globalThis.crypto, TextDecoder });
   const modules = new Map();
@@ -38,14 +38,15 @@ async function harness(integrated = false) {
     ['./backend', 'src/api/inference/backend.ts'],
     ['./sse', 'src/api/inference/sse.ts'],
     ['integrated', 'src/api/inference/integrated.ts'],
+    ['./integrated', 'src/api/inference/integrated.ts'],
     ['entry', 'src/api/inference/index.ts'],
   ]) modules.set(key, new vm.SourceTextModule(ts.transpileModule(await fs.readFile(path, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-  }).outputText, { context }));
-  const entry = modules.get(integrated ? 'integrated' : 'entry');
+  }).outputText, { context, initializeImportMeta: meta => { meta.env = { VITE_INTEGRATED_AI: integratedEntry ? 'true' : 'false' }; } }));
+  const entry = modules.get(integrated && !integratedEntry ? 'integrated' : 'entry');
   await entry.link(key => { assert.ok(modules.has(key), key); return modules.get(key); });
   await entry.evaluate();
-  return { api: integrated ? entry.namespace.integratedBackend : entry.namespace, requests, cancels, listeners,
+  return { api: integrated && !integratedEntry ? entry.namespace.integratedBackend : entry.namespace, requests, cancels, listeners,
     emit: payload => { for (const callback of listeners) callback({ payload }); } };
 }
 async function until(predicate) {
@@ -132,4 +133,15 @@ test('integrated cancellation waits for native completion and cleans up', async 
   await until(() => h.requests.length === 1); controller.abort();
   assert.deepEqual(h.cancels, [h.requests[0].requestId]); h.requests[0].finish();
   assert.equal((await result).error, 'cancelled'); assert.equal(h.listeners.size, 0);
+});
+
+test('integrated build entry routes educator requests to native inference', async () => {
+  const h = await harness(true, true);
+  const result = h.api.sendChat(messages);
+  await until(() => h.requests.length === 1);
+  assert.ok(h.requests[0].messages);
+  assert.equal(h.requests[0].bodyJson, undefined);
+  h.emit({ requestId: h.requests[0].requestId, bytes: Array.from(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"Integrated"}}]}\n\ndata: [DONE]\n\n')) });
+  h.requests[0].finish();
+  assert.equal((await result).value, 'Integrated');
 });

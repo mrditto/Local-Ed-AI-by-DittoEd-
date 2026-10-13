@@ -1,5 +1,6 @@
 import type { ChatRequestMessage, GenerationOptions, InferenceResult } from "./types";
 import { checkConnection, listModels, sendChat } from "../ollama";
+import { integratedBackend } from "./integrated";
 
 /** Transport owns request isolation, serialization and cancellation. */
 export interface InferenceBackend {
@@ -17,4 +18,5 @@ const ollamaBackend: InferenceBackend = {
 };
 
 // Keep the existing engine until packaged integrated inference is validated.
-export const activeBackend: InferenceBackend = ollamaBackend;
+export const integratedBuild = import.meta.env.VITE_INTEGRATED_AI === "true";
+export const activeBackend: InferenceBackend = integratedBuild ? integratedBackend : ollamaBackend;
