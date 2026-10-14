@@ -2,11 +2,19 @@
 
 Echoing the educator, not replacing the magic.
 
-A local, privacy-preserving AI assistant for educators — a prompt library and chat interface running entirely offline against [Ollama](https://ollama.com/) directly. Nothing you type, and no chat you save, ever leaves the machine.
+A local AI drafting assistant for educators, with a prompt library, chat, saved history and Maryland IEP drafting tools. AI processing runs on your computer; review every draft before use. Exports, optional email reports and device backups are separate actions or services you control.
 
-**Environmental impact:** there's no data center involved anywhere in this. Every response is generated on your own computer's CPU, the same way any other program on that machine uses electricity — running Local Ed AI doesn't draw meaningfully more power than normal computer use, and there's no server farm running on your behalf in the background.
+**Local processing:** inference runs locally rather than through a cloud AI service. CPU usage and electricity consumption depend on the model, request and hardware; no comparative energy benchmark is claimed.
 
-**Status:** Phase 1 (MVP) in progress. See `docs/PHASE1_IMPLEMENTATION_PLAN.md` for the full build plan, task breakdown, and done criteria.
+## Current build status — October 13, 2026
+
+The existing public releases and `master` application code use Ollama. The integrated Windows implementation is on [codex/integrated-local-ai](https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/tree/codex/integrated-local-ai), under [PR #36](https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/pull/36), which is still open. It bundles **Qwen3.5-4B Q4_K_M** and the native CPU runtime, without requiring a separate Ollama installation or default-model download.
+
+The [Windows MSIX workflow passed](https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/actions/runs/38487097804): locked npm installation, typecheck, lint, inference/native tests, compilation, packaging and verification of actual bundled files. It generated `Local Ed AI_1.0.2.0_x64.msix` (approximately 2.73 GB); the app version remains **0.5.5**. Development installation, bundled startup, retained history, generation and cancellation/recovery have passed on the test computer.
+
+**Not yet Store-certified or publicly released.** Package 1.0.2.0 has been uploaded to the Partner Center draft. Certification-kit diagnostics, production/clean-machine installation checks and older-hardware validation remain open. Performance on 8 GB and 16 GB computers is not yet verified. Build success does not establish factual accuracy for every educator task.
+
+Read the integrated branch's [build handoff](https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/blob/codex/integrated-local-ai/docs/local-ai/STATUS.md) for detailed evidence. The download links and setup instructions below describe the **existing Ollama version**, not the bundled candidate. See the [website](https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/), [privacy policy](https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/privacy.html) and [AI use policy](https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/ai-policy.html) for current information.
 
 ## Features
 
