@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Local Ed AI by DittoEd — a private AI assistant for educators</title>
-<meta name="description" content="A local, privacy-preserving AI assistant for educators. Drafts lesson plans, feedback, and Maryland IEP sections entirely offline against Ollama. Nothing you type ever leaves your computer." />
+<meta name="description" content="Local AI for educators: lesson planning, feedback and Maryland IEP drafts. A Windows build with bundled Qwen3.5-4B is being prepared for Microsoft Store distribution." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;700&family=Source+Sans+3:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
@@ -83,7 +83,7 @@
   /* Hero */
   .hero { padding: 88px 0 56px; text-align: center; }
   .eyebrow {
-    display: inline-block; font-family: var(--font-stencil);
+    display: block; font-family: var(--font-stencil);
     font-size: 0.8rem; color: var(--ditto);
     margin-bottom: 22px;
   }
@@ -146,7 +146,7 @@
   .privacy-section svg { width: 100%; height: auto; }
   .privacy-section p { margin: 0 0 14px; }
   .stamp-badge {
-    display: inline-block; font-family: var(--font-stencil); font-size: 0.78rem;
+    display: block; font-family: var(--font-stencil); font-size: 0.78rem;
     color: var(--stamp); border: 2px solid var(--stamp); border-radius: 4px;
     padding: 6px 12px; transform: rotate(-2deg);
   }
@@ -216,7 +216,7 @@
   }
   .support-list strong { font-family: var(--font-display); }
   .support-cost {
-    display: inline-block; font-family: var(--font-stencil); font-size: 0.68rem;
+    display: block; font-family: var(--font-stencil); font-size: 0.68rem;
     color: var(--stamp); border: 1px solid var(--stamp); border-radius: 3px;
     padding: 2px 8px; margin-left: 8px; vertical-align: 2px; white-space: nowrap;
   }
@@ -238,7 +238,7 @@
 
 <header class="hero">
   <div class="wrap">
-    <span class="eyebrow">No cloud. No accounts. No data leaving this room.</span>
+    <span class="eyebrow">Local inference. No cloud AI account required.</span>
     <div class="echo-wrap">
       <h1 class="echo" aria-hidden="true">Local Ed AI</h1>
       <h1>Local Ed AI</h1>
@@ -246,17 +246,27 @@
     <p class="tagline">Echoing the educator, not replacing the magic.</p>
     <p class="hero-sub">
       A free AI assistant for teachers — lesson plans, feedback, and <strong>Maryland IEP drafts</strong> — generated
-      by a model that runs entirely on <strong>your</strong> computer, with nothing you type ever sent anywhere else.
+      by a model that runs on <strong>your</strong> computer. Review every AI-assisted draft before use.
     </p>
     <div class="download-row">
-      <a id="download-btn" class="btn btn-stamp" href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/releases/latest" download>
-        Download for Windows
-      </a>
-      <span class="download-hint" id="download-hint">Free · Runs offline · ~10 minute setup</span>
-      <span class="download-alt">Having trouble? <a href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/releases">Get it from the repository</a></span>
+      <a class="btn btn-stamp" href="#install">Microsoft Store release status</a>
+      <span class="download-hint">Not yet available in Microsoft Store</span>
     </div>
   </div>
 </header>
+
+<section class="section wrap" aria-labelledby="integrated-title">
+  <h2 id="integrated-title">A built-in local model is coming</h2>
+  <p class="section-lede"><strong>Store submission preparation · Updated October 15, 2026.</strong> The Windows integrated build includes Qwen3.5-4B Q4_K_M and its native CPU runtime, so it can generate drafts without installing Ollama or downloading a model separately.</p>
+  <div class="grid">
+    <div class="card"><span class="card-tag">Included model</span><h3>Qwen3.5-4B</h3><p>The default model is bundled in the installer and loads from local package files. The current Windows x64 candidate is approximately 2.73 GB. No dedicated GPU is required for its CPU runtime.</p></div>
+    <div class="card"><span class="card-tag">Tested locally</span><h3>Startup, history and recovery</h3><p>Development installation, bundled-model startup, retained history, response generation and cancellation/recovery have passed on our test computer. These checks do not establish accuracy for every task or compatibility with every PC.</p></div>
+    <div class="card"><span class="card-tag">Release status</span><h3>Store preparation continues</h3><p>The integrated build has not passed Microsoft Store certification and is not a public release. The GitHub Windows build and full package verification passed. Package 1.0.2.0 requires a website metadata correction following Store review. Submission preparation continues. Performance on 8 GB and 16 GB computers is not yet verified.</p></div>
+  </div>
+  <p><a href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/tree/codex/integrated-local-ai">View integrated development source</a> · <a href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/actions/runs/38487097804">View successful Windows build</a></p>
+  <p><strong>Verified build:</strong> Store candidate 1.0.2.0 (app version 0.5.5), Windows x64. Locked dependency installation, typecheck, lint, inference/native tests, packaging and bundled-file verification passed on GitHub. This is build evidence, not Microsoft Store approval.</p>
+  <p>The current overview video shows an earlier version. The intended Microsoft Store package includes the model and its runtime.</p>
+</section>
 
 <section class="section wrap video-section" aria-labelledby="video-title">
   <div class="video-card">
@@ -283,18 +293,17 @@
       <line x1="94" y1="12" x2="122" y2="38" stroke="#C97A2B" stroke-width="3" stroke-linecap="round"/>
     </svg>
     <div>
-      <h2>Your data never leaves your machine</h2>
+      <h2>Your drafts are processed locally</h2>
       <p>
-        Every major classroom AI tool asks you to trust a cloud vendor with student information. Local Ed AI
-        structurally can't leak it — the model runs on your machine through <a href="https://ollama.com/">Ollama</a>,
-        with no server in between.
+        Local Ed AI sends prompts to a model on your own computer, without cloud AI inference. The integrated Windows build uses its bundled runtime and Qwen model. Chats and attached
+        files stay in local app storage unless you choose to export or share them.
       </p>
       <p>
         That matters most for the highest-stakes records a school handles. IEP and 504 documentation sits under
         both FERPA and IDEA, names a child's disability, and describes their specific needs. It is exactly the
         content that should never be pasted into a chatbot — and the reason this tool exists.
       </p>
-      <span class="stamp-badge">0 cloud calls · 0 data egress</span>
+      <span class="stamp-badge">Local inference · Human review required</span>
     </div>
   </div>
 </div>
@@ -348,8 +357,8 @@
       </div>
       <div class="it-item">
         <span class="it-q">What network calls does it make?</span>
-        <h3>Two, both optional</h3>
-        <p>Downloading Ollama and a model during first-run setup. After that, the only traffic is to your own machine on localhost. You can verify this yourself — the source is public.</p>
+        <h3>Local inference traffic</h3>
+        <p>The Microsoft Store candidate includes both its runtime and default weights. Inference uses localhost; opening reference links, visiting this site or sending a report through your email app involves external services you choose to use.</p>
       </div>
       <div class="it-item">
         <span class="it-q">Can we audit or self-host it?</span>
@@ -368,29 +377,9 @@
 
 <div class="install-band" id="install">
   <div class="wrap">
-    <h2>How it works</h2>
-    <p class="section-lede">No account, no subscription, no data plan. Setup is guided the first time you launch.</p>
-    <ol class="steps">
-      <li data-step="1"><strong>Download and run the installer</strong> for your OS.</li>
-
-      <!--
-        SMARTSCREEN BLOCK — remove this entire <li> once the code signing
-        certificate is purchased and releases are signed. Nothing else needs to change.
-      -->
-      <li data-step="2">
-        <strong>Expect a Windows "unknown publisher" warning.</strong>
-        <span class="step-note">
-          Windows shows this for any installer without a paid code signing certificate. It is a statement about
-          the certificate, not about the software — you can read every line of the source
-          <a href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-">on GitHub</a> and build the installer
-          yourself if you'd rather not take our word for it. To continue: "More info" → "Run anyway."
-          A signing certificate is the first thing sponsorship money goes toward.
-        </span>
-      </li>
-
-      <li data-step="3"><strong>Let it set up Ollama</strong> — the app detects whether you have it and offers to install it for you.</li>
-      <li data-step="4"><strong>Pick a starter model</strong> sized to your hardware, then start prompting. Everything from here runs 100% on your machine.</li>
-    </ol>
+    <h2>Microsoft Store availability</h2>
+    <p class="section-lede">Local Ed AI is not yet available in Microsoft Store. We will add its Store installation link after approval and publication.</p>
+    <p>The submitted Windows x64 package includes Qwen3.5-4B and its CPU runtime. No separate Ollama installation or model download is needed for the included model. WebView2 is required. Review the hardware and testing limitations above.</p>
   </div>
 </div>
 
@@ -407,8 +396,8 @@
   <div class="roadmap-item">
     <span class="roadmap-status status-planned">Planned</span>
     <div>
-      <strong>Signed installers</strong>
-      <p>A code signing certificate, so the installer stops tripping SmartScreen and Gatekeeper warnings. Funded by sponsorship.</p>
+      <strong>Integrated Windows release and Microsoft Store certification</strong>
+      <p>Finish bundled-runtime testing and certification readiness. Signing and distribution checks are part of this work; Store approval has not been obtained.</p>
     </div>
   </div>
   <div class="roadmap-item">
@@ -428,9 +417,8 @@
   </p>
   <ul class="support-list">
     <li>
-      <strong>Code signing</strong><span class="support-cost">~$150 / year</span> — an unsigned installer trips Windows
-      SmartScreen and macOS Gatekeeper warnings that scare off exactly the risk-averse school IT departments this
-      project needs to win over. A code signing certificate removes that warning. This is the first thing funded.
+      <strong>Release testing and distribution</strong> — support installer testing, accessibility review and
+      secure distribution. Signing identifies a publisher but does not guarantee that Windows will never show a warning.
     </li>
     <li>
       <strong>An independent domain</strong><span class="support-cost">~$40 / year</span> — pointing a real domain at
@@ -459,7 +447,7 @@
     <p>
       <a href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-">GitHub</a> ·
       <a href="https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/blob/master/CHANGELOG.md">Changelog</a> ·
-      <a href="download">Download</a> ·
+      <a href="#install">Download</a> ·
       <a href="privacy.html">Privacy</a> ·
       <a href="ai-policy.html">AI policy</a> ·
       <a href="terms.html">Terms &amp; disclaimer</a>
@@ -467,42 +455,6 @@
     <p class="credit">Local Ed AI by DittoEd</p>
   </div>
 </footer>
-
-<script>
-(function () {
-  var REPO = "mrditto/Local-Ed-AI-by-DittoEd-";
-  var btn = document.getElementById("download-btn");
-  var hint = document.getElementById("download-hint");
-
-  var ua = navigator.userAgent;
-  var isMac = /Mac/.test(ua);
-  var isWin = /Win/.test(ua);
-  var osLabel = isMac ? "macOS" : isWin ? "Windows" : "Linux";
-  btn.textContent = "Download for " + osLabel;
-
-  function pickAsset(assets) {
-    var pattern = isMac ? /\.dmg$/i : isWin ? /\.(msi|exe)$/i : /\.(AppImage|deb)$/i;
-    var match = assets.find(function (a) { return pattern.test(a.name); });
-    return match || assets[0];
-  }
-
-  fetch("https://api.github.com/repos/" + REPO + "/releases/latest")
-    .then(function (res) {
-      if (!res.ok) throw new Error("no release yet");
-      return res.json();
-    })
-    .then(function (release) {
-      if (!release.assets || release.assets.length === 0) throw new Error("no assets");
-      var asset = pickAsset(release.assets);
-      btn.href = asset.browser_download_url;
-      hint.textContent = "Latest: " + release.tag_name + " · " + asset.name;
-    })
-    .catch(function () {
-      // No release published yet, or repo is still private — link stays pointed at the releases page.
-      hint.textContent = "Free · Runs offline · see releases for the latest build";
-    });
-})();
-</script>
 
 </body>
 </html>

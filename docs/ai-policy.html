@@ -37,7 +37,7 @@
 <div class="wrap">
   <a class="back" href="index.html">← Back to Local Ed AI</a>
   <h1>AI use policy</h1>
-  <p class="updated">Local Ed AI by DittoEd · Last updated July 2026</p>
+  <p class="updated">Local Ed AI by DittoEd · Last updated October 13, 2026</p>
 
   <div class="callout">
     <strong>The short version:</strong> a general-purpose open-weight language model runs on your machine and drafts
@@ -47,9 +47,7 @@
 
   <h2>What model runs, and where</h2>
   <p>
-    Local Ed AI runs an open-weight language model locally through <a href="https://ollama.com/">Ollama</a>. The
-    default is Phi-4 Mini (3.8B parameters, quantized), chosen because it runs at usable speed on ordinary
-    school-issued laptops without a dedicated graphics card. You can select a different model during setup or later.
+    The integrated Windows development build bundles Qwen3.5-4B Q4_K_M and a native CPU runtime, without requiring Ollama. Optional local model imports must match its reviewed catalog. The integrated build is not yet a public Store-certified release; performance on older 8 GB and 16 GB computers remains unverified.
   </p>
   <p>
     The model file lives on your machine and runs on your CPU. There is no API key, no hosted inference, and no
@@ -62,12 +60,12 @@
   </p>
   <ul>
     <li><strong>Your input is not used for training.</strong> The model weights are fixed and read-only. Nothing you type modifies them, and nothing is sent anywhere to train anything else.</li>
-    <li><strong>Your input is not reviewed by a human.</strong> There is no maintainer-side review queue, because there is no maintainer-side anything.</li>
-    <li><strong>Your input is not retained by any third party.</strong> It never reaches one.</li>
+    <li><strong>No automatic maintainer review.</strong> Local generation does not send prompts to the maintainer. If you choose to send an email report, its recipients can read the information you include.</li>
+    <li><strong>Local app storage.</strong> The app does not send prompts to a cloud AI provider. Exports, email reports and device backups can create copies handled by other services you choose.</li>
   </ul>
 
   <h2>What the application will not do</h2>
-  <p>These are product boundaries, not just guidance:</p>
+  <p>These are intended-use boundaries. Prompt guidance is not a technical guarantee against incorrect or inappropriate output:</p>
   <ul>
     <li>It does not make eligibility determinations under IDEA or Section 504.</li>
     <li>It does not make placement, services, or disciplinary determinations.</li>
@@ -83,8 +81,7 @@
   <ul>
     <li>
       <strong>It can be confidently wrong.</strong> Language models generate plausible text, not verified fact. A
-      3.8B model running on a laptop is meaningfully less capable than a large hosted model, and that tradeoff is
-      the price of the privacy guarantee. Check anything factual.
+      local model has task-specific limitations that benchmarks alone do not resolve. Check factual claims against authoritative sources.
     </li>
     <li>
       <strong>It does not know your student.</strong> It only knows what you typed into that conversation. A draft
@@ -105,16 +102,13 @@
   <ul>
     <li>Use it to get past the blank page, then edit in your own professional voice.</li>
     <li>Read every generated line before it enters a student record or goes to a family.</li>
-    <li>Even though data never leaves your machine, use the minimum identifying detail necessary. Good habit, and it keeps drafts reusable.</li>
+    <li>Use the minimum identifying detail necessary, including in local drafts and any material you export or report. Good habit, and it keeps drafts reusable.</li>
     <li>Follow your district's AI policy. This tool is designed to make compliance easier, not to substitute for it.</li>
   </ul>
 
   <h2>For districts writing AI policy</h2>
   <p>
-    Local Ed AI is intended to be a straightforward case under most district AI policies and under the Maryland
-    State Department of Education's AI guidance: the model is open-weight, inference is local, no student data is
-    transmitted or retained by any vendor, the source is auditable, and every output is human-reviewed by design.
-    Districts are welcome to reference this page directly in their tool inventories and vetting documentation.
+    Districts should evaluate the actual build and their own policies rather than assume local inference ensures compliance. The source is public and outputs are labeled for review; human review remains the user's responsibility. Reference the <a href="privacy.html">privacy policy</a> for exports, reporting and backup considerations.
   </p>
 
   <h2>Changes</h2>

@@ -40,27 +40,24 @@
 <div class="wrap">
   <a class="back" href="index.html">← Back to Local Ed AI</a>
   <h1>Privacy policy</h1>
-  <p class="updated">Local Ed AI by DittoEd · Last updated July 2026</p>
+  <p class="updated">Local Ed AI by DittoEd · Last updated October 13, 2026</p>
 
   <div class="callout">
-    <strong>The short version:</strong> the application collects nothing, transmits nothing, and has no server to
-    send anything to. There is no account, no login, no telemetry, and no analytics. Everything you type stays on
-    the machine you typed it on.
+    <strong>The short version:</strong> AI processing and app storage are local. There is no cloud AI fallback or automatic maintainer telemetry. Exports, reference links, optional email reports and operating-system backups are separate actions or services you control.
   </div>
 
   <h2>Who this covers</h2>
   <p>
     This policy covers the Local Ed AI desktop application and this website. The project is maintained by an
-    individual developer, not a company. There is no data processor, no sub-processor, and no third party with
-    access to anything you enter, because nothing you enter ever leaves your device.
+    individual developer. The integrated Windows build includes a native runtime and Qwen3.5-4B weights. The integrated build is not yet Store-certified.
   </p>
 
   <h2>What the application collects</h2>
-  <p>Nothing. There is no collection mechanism in the software.</p>
+  <p>The maintainer does not automatically receive app content. The app processes and saves information you choose to enter locally, including personalization, prompts and attached files.</p>
   <table>
-    <tr><th>Category</th><th>Collected?</th></tr>
-    <tr><td>Personal information (name, email, school)</td><td>No. There is no account system.</td></tr>
-    <tr><td>Student data, including IEP content</td><td>No. Processed locally, stored locally, never transmitted.</td></tr>
+    <tr><th>Category</th><th>Automatically sent to the maintainer?</th></tr>
+    <tr><td>Personal information (name, email, school)</td><td>No. Optional personalization is stored locally; no cloud AI account is required.</td></tr>
+    <tr><td>Student data, including IEP content</td><td>No. Processed and stored locally; review exports and reports before sharing.</td></tr>
     <tr><td>Chat content and prompts</td><td>No. Sent only to the local model on your own machine.</td></tr>
     <tr><td>Uploaded or attached files</td><td>No. Stored in local browser storage on your device.</td></tr>
     <tr><td>Usage analytics, telemetry, crash reports</td><td>No. None are implemented.</td></tr>
@@ -71,22 +68,15 @@
   <h2>Where your data is stored</h2>
   <p>
     On your machine only. Chats, IEP drafts, projects, and saved files are written to IndexedDB, the local storage
-    layer of the application's embedded browser view, inside your own user profile. Nothing is synced, backed up
-    to a server, or replicated to another device. If you delete the application data or the user profile, that
-    content is gone — there is no copy anywhere else, including with the maintainer.
+    layer of the application's embedded browser view, inside your user profile. The app does not implement cloud synchronization. Windows, OneDrive, school IT tools or other backup software may copy user data according to their own settings. Exported copies may also exist. Deleting local app data does not delete those separate copies.
   </p>
 
   <h2>Network connections the application makes</h2>
-  <p>The application makes exactly two categories of outbound request, both of which are visible in the source code:</p>
+  <p>The integrated Windows build uses the following connections:</p>
   <ul>
     <li>
-      <strong>First-run setup (optional, one time).</strong> If you do not already have Ollama installed, the app
-      offers to download Ollama and a language model of your choosing. These are downloads of publicly available
-      software; nothing about you or your work is sent as part of them.
-    </li>
-    <li>
       <strong>Local model requests (ongoing).</strong> All prompts and generated text travel between the app and
-      Ollama over <code>localhost</code> on your own machine. This traffic never touches a network.
+      the local runtime over <code>localhost</code> on your own machine. The integrated candidate bundles its default runtime and model; no separate model download is needed for that default.
     </li>
   </ul>
   <p>
@@ -94,25 +84,15 @@
     reaching out to a hosted service.
   </p>
 
+  <h2>Sharing and reports</h2><p>Opening references contacts their websites. Exporting a draft creates a file you can share. Flagging a response or reporting an error opens a pre-filled email in your email app; nothing is sent automatically. If you send it, the maintainer and your email provider receive what you include. Remove identifying student details before sending. Follow your organization's device and backup policies.</p>
   <h2>This website</h2>
   <p>
-    This site is static, hosted on GitHub Pages, and sets no cookies and runs no analytics. It makes one
-    client-side request to GitHub's public releases API so the download button can point at the current build.
-    That request goes to GitHub, not to us, and is subject to
+    This site is static, hosted on GitHub Pages, and sets no cookies and runs no analytics. Hosting requests go to GitHub and are subject to
     <a href="https://docs.github.com/site-policy/privacy-policies/github-privacy-statement">GitHub's privacy statement</a>.
     Fonts are loaded from Google Fonts, which means your browser contacts Google's servers to retrieve them.
   </p>
 
-  <h2>FERPA, IDEA, and COPPA</h2>
-  <p>
-    Because no student data is collected, transmitted, or stored by any party other than the user's own device,
-    the maintainer is not a "school official" with access to education records, and there is no vendor data flow to
-    govern. Districts evaluating this tool generally find there is nothing to sign a data privacy agreement about,
-    since there is no data sharing to agree on. Your district should still conduct its own review — see the
-    <a href="terms.html">terms and disclaimer</a>.
-  </p>
-  <p>
-    The current release is a tool for educators, not for direct student use. A separate student-facing build is
+  <h2>School and district review</h2><p>Local processing does not by itself establish legal compliance or district approval. Schools should review the actual application, device settings, data handling and applicable policies before use. See the <a href="terms.html">terms and disclaimer</a>.</p><p>The current release is a tool for educators, not for direct student use. A separate student-facing build is
     planned and will carry its own guardrails and its own policy.
   </p>
 
