@@ -49,7 +49,7 @@
   <h2>Who this covers</h2>
   <p>
     This policy covers the Local Ed AI desktop application and this website. The project is maintained by an
-    individual developer. Existing public releases use Ollama; the integrated Windows development build includes a native runtime and Qwen3.5-4B weights. The integrated build is not yet Store-certified.
+    individual developer. The integrated Windows build includes a native runtime and Qwen3.5-4B weights. The integrated build is not yet Store-certified.
   </p>
 
   <h2>What the application collects</h2>
@@ -72,13 +72,8 @@
   </p>
 
   <h2>Network connections the application makes</h2>
-  <p>Connection behavior depends on the build:</p>
+  <p>The integrated Windows build uses the following connections:</p>
   <ul>
-    <li>
-      <strong>Existing Ollama releases.</strong> If you do not already have Ollama installed, the app
-      offers to download Ollama and a language model of your choosing. These are downloads of publicly available
-      software. Download services may receive ordinary connection information such as an IP address; your prompts are not part of these download requests.
-    </li>
     <li>
       <strong>Local model requests (ongoing).</strong> All prompts and generated text travel between the app and
       the local runtime over <code>localhost</code> on your own machine. The integrated candidate bundles its default runtime and model; no separate model download is needed for that default.
@@ -92,9 +87,7 @@
   <h2>Sharing and reports</h2><p>Opening references contacts their websites. Exporting a draft creates a file you can share. Flagging a response or reporting an error opens a pre-filled email in your email app; nothing is sent automatically. If you send it, the maintainer and your email provider receive what you include. Remove identifying student details before sending. Follow your organization's device and backup policies.</p>
   <h2>This website</h2>
   <p>
-    This site is static, hosted on GitHub Pages, and sets no cookies and runs no analytics. It makes one
-    client-side request to GitHub's public releases API so the download button can point at the current build.
-    That request goes to GitHub, not to us, and is subject to
+    This site is static, hosted on GitHub Pages, and sets no cookies and runs no analytics. Hosting requests go to GitHub and are subject to
     <a href="https://docs.github.com/site-policy/privacy-policies/github-privacy-statement">GitHub's privacy statement</a>.
     Fonts are loaded from Google Fonts, which means your browser contacts Google's servers to retrieve them.
   </p>
