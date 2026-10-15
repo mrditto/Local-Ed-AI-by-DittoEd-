@@ -2,95 +2,47 @@
 
 Echoing the educator, not replacing the magic.
 
-A local AI drafting assistant for educators, with a prompt library, chat, saved history and Maryland IEP drafting tools. AI processing runs on your computer; review every draft before use. Exports, optional email reports and device backups are separate actions or services you control.
+A local AI drafting assistant for educators: lesson planning, differentiation, assessment, feedback and Maryland IEP drafts. Review every AI-assisted draft before use.
 
-**Local processing:** inference runs locally rather than through a cloud AI service. CPU usage and electricity consumption depend on the model, request and hardware; no comparative energy benchmark is claimed.
+## Current status — October 15, 2026
 
-## Current build status — October 13, 2026
+The integrated Windows x64 implementation bundles **Qwen3.5-4B Q4_K_M** and its native CPU inference runtime. The included model does not require another AI application or a separate model download.
 
-The existing public releases and `master` application code use Ollama. The integrated Windows implementation is on [codex/integrated-local-ai](https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/tree/codex/integrated-local-ai), under [PR #36](https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/pull/36), which is still open. It bundles **Qwen3.5-4B Q4_K_M** and the native CPU runtime, without requiring a separate Ollama installation or default-model download.
+**Not yet Microsoft Store-certified or publicly available through the Store.** Package **1.0.2.0**, application **0.5.5**, received a website-metadata rejection under policy 10.1.5 on October 15. External installer promotion has been removed from the website source; live deployment and resubmission must be verified separately. No Store approval is claimed.
 
-The [Windows MSIX workflow passed](https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/actions/runs/38487097804): locked npm installation, typecheck, lint, inference/native tests, compilation, packaging and verification of actual bundled files. It generated `Local Ed AI_1.0.2.0_x64.msix` (approximately 2.73 GB); the app version remains **0.5.5**. Development installation, bundled startup, retained history, generation and cancellation/recovery have passed on the test computer.
+The integrated implementation was merged into master through [PR #36](https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/pull/36). The Store workflow uses the explicit integrated production build. Earlier build paths remain for compatibility; use the integrated build guide rather than historical setup instructions.
 
-**Not yet Store-certified or publicly released.** Package 1.0.2.0 has been uploaded to the Partner Center draft. Certification-kit diagnostics, production/clean-machine installation checks and older-hardware validation remain open. Performance on 8 GB and 16 GB computers is not yet verified. Build success does not establish factual accuracy for every educator task.
+The [verified Windows workflow](https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/actions/runs/38487097804) generated the approximately **2.73 GB** MSIX. Locked dependency installation, typecheck, lint, inference/native tests, build, packaging and actual bundled-file verification passed. This is build evidence, not Store certification.
 
-Read the integrated branch's [build handoff](https://github.com/mrditto/Local-Ed-AI-by-DittoEd-/blob/codex/integrated-local-ai/docs/local-ai/STATUS.md) for detailed evidence. The download links and setup instructions below describe the **existing Ollama version**, not the bundled candidate. See the [website](https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/), [privacy policy](https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/privacy.html) and [AI use policy](https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/ai-policy.html) for current information.
+## Educator workflows
 
-## Features
+- Prompt library and Ask DittoEd for editable drafts.
+- Maryland IEP narrative drafting, with Word/PDF draft exports for team review.
+- Local chat and IEP history, projects, search and reusable attachments.
+- Tone, language and response-length preferences.
+- Generation cancellation and recovery.
+- User-initiated feedback/reporting through the user's email application.
 
-- **Prompt library** — a curated set of ready-to-edit prompts for lesson planning, assessment, feedback, communication, differentiation, and more, organized by category.
-- **Ask DittoEd** — a general-purpose assistant for when you're not sure which prompt to reach for.
-- **IEP Form Assistant** — walk through a Maryland IEP (MdIEP) section by section, draft narrative fields with AI from your seed notes, and export a `.docx`/PDF draft. Every draft is clearly watermarked as requiring full IEP team review — this tool never makes an eligibility, placement, or disciplinary determination.
-- **Persistent history** — every chat and every IEP draft is saved automatically (locally, via IndexedDB) and can be resumed later with full context intact, including any hidden personalization/attachment context from the original conversation.
-- **Projects** — manually group related chats and drafts into named projects; ungrouping a project never deletes its contents.
-- **Pin & search** — pin the chats you return to often, and full-text search across titles and message content to find anything fast.
-- **Reusable file library** — documents you attach once are saved locally so you can reattach them to a future chat without re-uploading.
-- **Export & verify** — copy any response or export it straight to Word/PDF; Special Education prompts also show a "Verify against" list of authoritative resources to check the draft against.
-- **Personalization** — set a preferred tone, response length, and response language that carries across chats. The AI's response language is independent of the app's own interface, which stays in English; the IEP Form Assistant always drafts in English, to match Maryland's official form.
-- **Accessible by design** — full keyboard navigation with visible focus indicators throughout, an adjustable text size (small/standard/large), and respect for your OS's reduced-motion preference.
-- **Transparent AI labeling** — every AI-generated response is clearly marked "AI-assisted draft — review before use"; the IEP Form Assistant additionally watermarks exported documents as a draft requiring full team review.
-- **Bias-aware by default** — every request carries a standing instruction to avoid stereotypes and biased assumptions (race, ethnicity, gender, disability, language, immigration status, religion, socioeconomic status) and to stick to what the teacher actually wrote rather than filling in assumptions. This is prompt-level guidance, not a guarantee — pair it with your own review and the flagging tool below.
-- **Flag & report** — flag any response that's wrong, unhelpful, or biased (with an optional note), or report a technical error directly from where it happened. Both open a pre-filled email to the maintainer in your own email app — nothing is sent automatically, and nothing leaves the app until you hit Send yourself.
-- **Guided first run** — detects whether Ollama is installed, offers to install it, and helps you pick and download a starter model sized to your hardware.
-- **Fully offline after setup** — the only network calls this app ever makes are to your own local Ollama instance and, during first-run setup, to download Ollama/a model. No telemetry, no analytics, no cloud fallback.
+The app assists educators; it does not determine eligibility, placement, services or disciplinary outcomes. Verify facts, standards and legal references against current authoritative sources.
 
-## Stack
+## Installation and requirements
 
-- **Shell:** Tauri v2 (Rust) — packages the app as a native Windows/Mac/Linux installer
-- **UI:** React + TypeScript + Vite
-- **Model runtime:** Ollama (phi4-mini primary), accessed directly via its local REST API
-- **Local storage:** IndexedDB (chat/IEP history, projects, saved files) — nothing is ever synced or uploaded
-- **License:** Apache 2.0
+A Microsoft Store installation link will be provided after approval and publication. This page does not offer an external installer.
 
-## System requirements
+The candidate targets Windows x64, Windows 10 build 19041 or later, and requires Microsoft Edge WebView2. It includes the CPU runtime, reviewed runtime dependencies and default model. A dedicated GPU is not required by the included CPU runtime.
 
-Local Ed AI itself is lightweight; the resource cost comes almost entirely from the local model you pick in first-run setup. All generation runs on CPU by default.
+Installed development startup, generation, cancellation/recovery and history reopening have been tested on the maintainer's computer. The owner reported a successful disconnected-internet lesson request. Simulated unavailable-WebView2 testing displayed the framework's native dependency error. These checks do not establish a clean production installation, migration from earlier installations, or performance on older 8 GB/16 GB computers.
 
-| Tier | Model | Download size | Recommended RAM | Best for |
-|---|---|---|---|---|
-| Light | `llama3.2:1b` | ~1.3 GB | 8 GB or less | Older or low-memory computers; fastest, simpler responses |
-| Recommended (default) | `phi4-mini:latest` | ~2.5 GB | 8 GB+ | Best balance of quality and speed for most school machines |
-| Enhanced | `llama3.1:8b` | ~4.9 GB | 16 GB+ | Higher-quality responses, on a newer computer, with more patience |
+Independent Windows API checks confirm Per-Monitor V2 awareness at the observed 125% scale. The local certification kit still reports a binary-inspection infrastructure warning and an optional scanner overflow; no clean certification-kit pass is claimed.
 
-General guidance:
+## Privacy and review
 
-- **RAM:** 8 GB minimum (Light/Recommended tiers); 16 GB recommended if you want the Enhanced tier or plan to keep other memory-heavy apps open at the same time.
-- **Disk space:** at least 5 GB free — covers the app itself, the Ollama runtime, and one downloaded model. Add the download size above for each additional model you try.
-- **CPU:** any machine from the last several years; generation speed scales with the model tier above, not with any special hardware.
+AI inference runs locally, with no cloud AI fallback. Chats and drafts are stored locally. Exports, reference websites, optional email reports and operating-system backups are separate user or device actions. Review student information before sharing it and follow district policy.
 
-## Prerequisites (one-time, per machine)
+[Website](https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/) · [Privacy](https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/privacy.html) · [AI use](https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/ai-policy.html) · [Terms](https://mrditto.github.io/Local-Ed-AI-by-DittoEd-/terms.html)
 
-1. [Node.js](https://nodejs.org/) (LTS)
-2. [Rust toolchain](https://www.rust-lang.org/tools/install) — required by Tauri
-3. Windows only: [Microsoft C++ Build Tools + WebView2](https://tauri.app/start/prerequisites/) — see Tauri's prerequisites page for your OS
-4. [Ollama](https://ollama.com/) installed and running
-5. Download the model you want to use, e.g. `ollama pull phi4-mini:latest`
+## Developer build
 
-## Getting started
+Use the current [integrated build guide](docs/local-ai/BUILD-GUIDE.md) and [build handoff](docs/local-ai/STATUS.md). Follow its pinned runtime/model staging, license inventory and Windows toolchain instructions before building. Do not use generic build commands from historical plans to produce the Store candidate.
 
-```bash
-npm install
-cp .env.example .env
-# optional: adjust .env with your Ollama base URL + model name
-npm run tauri dev
-```
-
-This opens the app in a native window backed by a Vite dev server. Make sure Ollama is running first — the app will show a connection error otherwise.
-
-## Building the installer
-
-```bash
-npm run tauri build
-```
-
-Produces a platform-native installer under `src-tauri/target/release/bundle/`. Phase 1 installers are **unsigned** — Windows SmartScreen will show an "unknown publisher" warning; that's expected until code signing is added in a later phase.
-
-## Project structure
-
-See `docs/PHASE1_IMPLEMENTATION_PLAN.md` §1 for the annotated file/folder layout.
-
-## Docs
-
-- `docs/EDUCATORLLM_ARCHITECTURE.md` — full architectural blueprint
-- `docs/EDUCATORLLM_QUICKSTART.md` — quickstart guide
-- `docs/PHASE1_IMPLEMENTATION_PLAN.md` — Phase 1 task breakdown, testing checklist, done criteria
+Historical architecture notes, changelogs and Git history describe earlier implementations; they are not current installation instructions. The source is Apache-2.0 licensed; bundled components retain their own notices.
