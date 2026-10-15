@@ -1,0 +1,27 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "integrated-only",
+  "description": "Integrated runtime, document import/export and user-directed reporting; no legacy HTTP downloads",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "dialog:default",
+    "fs:default",
+    "fs:allow-write-file",
+    "clipboard-manager:allow-write-text",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        {
+          "path": "$TEMP/*"
+        },
+        {
+          "path": "**"
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,17 @@
 {
-  "build": { "beforeBuildCommand": "npm run build:integrated" },
-  "bundle": { "resources": { "resources/local-ai-runtime/": "local-ai-runtime/" } }
+  "build": {
+    "beforeBuildCommand": "npm run build:integrated"
+  },
+  "bundle": {
+    "resources": {
+      "resources/local-ai-runtime/": "local-ai-runtime/"
+    }
+  },
+  "app": {
+    "security": {
+      "capabilities": [
+        "integrated-only"
+      ]
+    }
+  }
 }

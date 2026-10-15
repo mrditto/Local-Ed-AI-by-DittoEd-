@@ -9,6 +9,7 @@ $receiptPath = Join-Path $repository 'local-ai-data/integrated-build.json'
 if (-not (Test-Path -LiteralPath $receiptPath)) { throw 'Run npm run tauri:integrated:build before packaging.' }
 $expectedIdentifier = if ($Production) { 'com.educatorllm.app' } else { 'com.dittoed.localai.integrated.dev' }
 $receipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
+if ($receipt.integratedOnly -ne $true) { throw 'Rebuild with the integrated-only native feature before packaging.' }
 if ((Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne $receipt.sha256 -or $receipt.identifier -ne $expectedIdentifier) { throw 'Integrated build receipt does not match the executable.' }
 $sdk = 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64'
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
@@ -41,10 +42,10 @@ $modelDestination = Join-Path $staging 'local-ai-models'
 New-Item -ItemType Directory -Path $modelDestination -Force | Out-Null
 Copy-Item -LiteralPath $modelSource -Destination $modelDestination
 $storeConfig = Get-Content (Join-Path $repository 'src-tauri/gen/windows/bundle.config.json') -Raw | ConvertFrom-Json
-$packageVersion = if ($Production) { [string]$storeConfig.version } else { '0.5.5.4' }
+$packageVersion = if ($Production) { [string]$storeConfig.version } else { '0.5.5.5' }
 if ($packageVersion -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw 'Package version must have four numeric components.' }
 $versionParts = @($packageVersion.Split('.') | ForEach-Object { [uint32]::Parse($_) })
-if (@($versionParts | Where-Object { $_ -gt 65535 }).Count -or $versionParts[0] -eq 0 -or ($Production -and $versionParts[3] -ne 0)) { throw 'Invalid Store package version.' }
+if (@($versionParts | Where-Object { $_ -gt 65535 }).Count -or ($Production -and ($versionParts[0] -eq 0 -or $versionParts[3] -ne 0))) { throw 'Invalid Store package version.' }
 $publisherDisplay = if ($Production) { 'Ditto ED' } else { 'DittoEd Development' }
 $publisher = if ($Production) { 'CN=1E8CAC31-13E1-436C-A5ED-F5F454796ADD' } else { 'CN=DittoEd Integrated Development' }
 if ($Unsigned -and -not $Production) { $publisher += ', OID.2.25.311729368913984317654407730594956997722=1' }

@@ -1,10 +1,16 @@
+#[cfg(not(feature = "integrated-only"))]
 use futures_util::StreamExt;
+#[cfg(not(feature = "integrated-only"))]
 use serde::Serialize;
 use std::collections::HashMap;
+#[cfg(not(feature = "integrated-only"))]
 use std::fs::File;
+#[cfg(not(feature = "integrated-only"))]
 use std::io::Write;
 use std::sync::{Arc, Mutex};
+#[cfg(not(feature = "integrated-only"))]
 use std::time::{Duration, Instant};
+#[cfg(not(feature = "integrated-only"))]
 use tauri::Emitter;
 use tokio::sync::Notify;
 mod integrated;
@@ -16,12 +22,14 @@ use tauri::Manager;
 #[derive(Default)]
 struct CancelRegistry(Mutex<HashMap<String, Arc<Notify>>>);
 
+#[cfg(not(feature = "integrated-only"))]
 #[derive(Clone, Serialize)]
 struct DownloadProgressPayload {
     downloaded: u64,
     total: Option<u64>,
 }
 
+#[cfg(not(feature = "integrated-only"))]
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct OllamaStreamPayload {
@@ -31,6 +39,7 @@ struct OllamaStreamPayload {
     error: Option<String>,
 }
 
+#[cfg(not(feature = "integrated-only"))]
 async fn stream_ollama_lines(
     window: tauri::Window,
     cancel_notify: Arc<Notify>,
@@ -125,6 +134,7 @@ fn cancel_ollama_stream(registry: tauri::State<'_, CancelRegistry>, request_id: 
     }
 }
 
+#[cfg(not(feature = "integrated-only"))]
 fn response_error_message(status: reqwest::StatusCode, body: &str) -> String {
     if body.trim().is_empty() {
         format!("Ollama responded with an unexpected status ({status}).")
@@ -133,6 +143,7 @@ fn response_error_message(status: reqwest::StatusCode, body: &str) -> String {
     }
 }
 
+#[cfg(not(feature = "integrated-only"))]
 #[tauri::command]
 async fn ollama_get_json(url: String) -> Result<String, String> {
     let response = reqwest::Client::new()
@@ -153,6 +164,7 @@ async fn ollama_get_json(url: String) -> Result<String, String> {
         .map_err(|err| format!("Couldn't read Ollama response: {err}"))
 }
 
+#[cfg(not(feature = "integrated-only"))]
 #[tauri::command]
 async fn ollama_chat_stream(
     window: tauri::Window,
@@ -185,6 +197,7 @@ async fn ollama_chat_stream(
     result
 }
 
+#[cfg(not(feature = "integrated-only"))]
 #[tauri::command]
 async fn ollama_pull_stream(
     window: tauri::Window,
@@ -217,6 +230,7 @@ async fn ollama_pull_stream(
     result
 }
 
+#[cfg(not(feature = "integrated-only"))]
 #[tauri::command]
 async fn download_ollama_installer(
     window: tauri::Window,
@@ -272,6 +286,7 @@ async fn download_ollama_installer(
     Ok(())
 }
 
+#[cfg(not(feature = "integrated-only"))]
 #[tauri::command]
 fn launch_ollama_installer(path: String) -> Result<(), String> {
     std::process::Command::new(&path)
@@ -291,11 +306,16 @@ pub fn run() {
         .manage(CancelRegistry::default())
         .manage(integrated::IntegratedRuntime::default())
         .invoke_handler(tauri::generate_handler![
+            #[cfg(not(feature = "integrated-only"))]
             ollama_get_json,
+            #[cfg(not(feature = "integrated-only"))]
             ollama_chat_stream,
+            #[cfg(not(feature = "integrated-only"))]
             ollama_pull_stream,
             cancel_ollama_stream,
+            #[cfg(not(feature = "integrated-only"))]
             download_ollama_installer,
+            #[cfg(not(feature = "integrated-only"))]
             launch_ollama_installer,
             integrated::start_integrated_runtime,
             integrated::stop_integrated_runtime,
