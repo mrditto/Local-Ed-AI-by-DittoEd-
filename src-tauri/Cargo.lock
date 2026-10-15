@@ -957,9 +957,11 @@ name = "educatorllm"
 version = "0.5.5"
 dependencies = [
  "futures-util",
+ "getrandom 0.3.4",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-clipboard-manager",
@@ -968,6 +970,7 @@ dependencies = [
  "tauri-plugin-http",
  "tauri-plugin-opener",
  "tokio",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

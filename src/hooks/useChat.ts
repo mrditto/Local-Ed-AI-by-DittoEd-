@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { sendChat, type ChatRequestMessage, type OllamaErrorKind } from "../api/ollama";
+import { sendChat, type ChatRequestMessage, type InferenceErrorKind } from "../api/inference";
 import type { SessionAttachmentMeta } from "../storage/types";
+import { integratedBuild } from "../api/inference/backend";
 
 export interface ChatMessage {
   id: string;
@@ -40,7 +41,8 @@ export function useChat(options?: UseChatOptions) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => options?.initialState?.messages ?? []);
   const [isSending, setIsSending] = useState(false);
   const [isQueued, setIsQueued] = useState(false);
-  const [lastErrorKind, setLastErrorKind] = useState<OllamaErrorKind | null>(null);
+  const [streamingText, setStreamingText] = useState("");
+  const [lastErrorKind, setLastErrorKind] = useState<InferenceErrorKind | null>(null);
   const outgoingHistoryRef = useRef<ChatRequestMessage[]>(options?.initialState?.outgoingHistory ?? []);
   const onTurnCompleteRef = useRef(options?.onTurnComplete);
   onTurnCompleteRef.current = options?.onTurnComplete;
@@ -101,17 +103,26 @@ export function useChat(options?: UseChatOptions) {
     ];
 
     const controller = new AbortController();
+    let partial = "";
+    setStreamingText("");
     abortControllerRef.current = controller;
 
     const result = await sendChat(conversation, {
       signal: controller.signal,
       onQueued: () => setIsQueued(true),
+      onChunk: integratedBuild ? chunk => { partial += chunk; setStreamingText(partial); } : undefined,
     });
 
     abortControllerRef.current = null;
     setIsQueued(false);
+    setStreamingText("");
 
     if (result.ok === false && result.error === "cancelled") {
+      if (partial) {
+        outgoingHistoryRef.current = [...conversation, { role: "assistant", content: partial }];
+        const saved = appendMessage({ id: newId(), role: "assistant", text: `${partial}\n\n[Generation stopped — draft incomplete.]`, createdAt: Date.now() });
+        onTurnCompleteRef.current?.(saved, outgoingHistoryRef.current);
+      } else { outgoingHistoryRef.current = conversation; }
       // The panel was unmounted mid-generation; there's nothing left to
       // show the abandoned response to, and it was never going to be saved.
       setIsSending(false);
@@ -134,6 +145,9 @@ export function useChat(options?: UseChatOptions) {
         createdAt: Date.now(),
       });
     } else {
+      if (partial) {
+        appendMessage({ id: newId(), role: "assistant", text: `${partial}\n\n[Generation failed — draft incomplete.]`, createdAt: Date.now() });
+      }
       setLastErrorKind(result.error);
       finalMessages = appendMessage({
         id: newId(),
@@ -154,5 +168,5 @@ export function useChat(options?: UseChatOptions) {
     outgoingHistoryRef.current = [];
   }, []);
 
-  return { messages, isSending, isQueued, lastErrorKind, sendMessage, reset, flagMessage };
+  return { messages, isSending, isQueued, streamingText, cancel: () => abortControllerRef.current?.abort(), lastErrorKind, sendMessage, reset, flagMessage };
 }

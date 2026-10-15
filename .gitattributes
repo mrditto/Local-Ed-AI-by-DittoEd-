@@ -1,0 +1,4 @@
+# Preserve the exact notice bytes pinned in the packaged runtime inventory.
+docs/local-ai/licenses/LLAMA-LICENSE.txt text eol=lf
+docs/local-ai/licenses/LICENSE-LLVM-OpenMP.txt text eol=lf
+docs/local-ai/licenses/QWEN-LICENSE.txt text eol=crlf

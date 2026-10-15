@@ -7,6 +7,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::Emitter;
 use tokio::sync::Notify;
+mod integrated;
+use tauri::Manager;
 
 /// Tracks in-flight Ollama stream requests so the frontend can cancel one by
 /// request ID (e.g. when the panel that started it unmounts). Keyed by the
@@ -287,14 +289,28 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .manage(CancelRegistry::default())
+        .manage(integrated::IntegratedRuntime::default())
         .invoke_handler(tauri::generate_handler![
             ollama_get_json,
             ollama_chat_stream,
             ollama_pull_stream,
             cancel_ollama_stream,
             download_ollama_installer,
-            launch_ollama_installer
+            launch_ollama_installer,
+            integrated::start_integrated_runtime,
+            integrated::stop_integrated_runtime,
+            integrated::integrated_chat_stream,
+            integrated::integrated_runtime_model,
+            integrated::integrated_setup_status,
+            integrated::import_integrated_model,
+            integrated::select_integrated_model,
+            integrated::cancel_integrated_setup
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            if matches!(event, tauri::RunEvent::Exit) {
+                let _ = app.state::<integrated::IntegratedRuntime>().stop();
+            }
+        });
 }

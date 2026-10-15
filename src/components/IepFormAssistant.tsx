@@ -8,7 +8,7 @@ import {
   Paragraph,
   TextRun,
 } from "docx";
-import { sendChat } from "../api/ollama";
+import { sendChat } from "../api/inference";
 import { saveGeneratedFile } from "../utils/exportMessage";
 import { Button } from "./ui/Button";
 import { Spinner } from "./ui/Spinner";

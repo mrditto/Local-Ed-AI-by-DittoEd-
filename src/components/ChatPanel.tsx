@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useChat, type ChatMessage } from "../hooks/useChat";
-import { checkConnection, type ChatRequestMessage } from "../api/ollama";
+import { checkConnection, type ChatRequestMessage } from "../api/inference";
+import { integratedBuild } from "../api/inference/backend";
 import { DisclaimerFooter } from "./DisclaimerFooter";
 import { VerifyFooter } from "./VerifyFooter";
 import { MessageActions } from "./MessageActions";
@@ -145,7 +146,7 @@ function ChatPanelBody({
   // first createChatSession promise resolves.
   const sessionCreationRef = useRef<Promise<string> | null>(null);
 
-  const { messages, isSending, isQueued, sendMessage, reset, flagMessage } = useChat({ initialState });
+  const { messages, isSending, isQueued, streamingText, cancel, sendMessage, reset, flagMessage } = useChat({ initialState });
 
   // Persist the full transcript straight from the live `messages` array
   // whenever it changes. Saving from `messages` (rather than a turn-complete
@@ -357,7 +358,7 @@ function ChatPanelBody({
         </Button>
       </header>
 
-      {connectionState === "checking" && <Spinner label="Checking Ollama connection…" />}
+      {connectionState === "checking" && <Spinner label="Checking AI connection…" />}
 
       {connectionState === "error" && (
         <div className="connection-banner connection-banner-error">{connectionMessage}</div>
@@ -387,6 +388,8 @@ function ChatPanelBody({
             {msg.role === "error" && <ErrorReportLink errorText={msg.text} />}
           </div>
         ))}
+        {streamingText && <div className="chat-message chat-message-assistant"><ReactMarkdown>{streamingText}</ReactMarkdown></div>}
+
         {isSending && (
           <Spinner label={isQueued ? "Waiting for another response to finish…" : "Thinking…"} />
         )}
@@ -436,6 +439,8 @@ function ChatPanelBody({
           </select>
         </div>
       </div>
+
+      {isSending && integratedBuild && <Button type="button" variant="secondary" onClick={cancel}>Stop generating</Button>}
 
       <form className="chat-input-row" onSubmit={handleSubmit}>
         <div className="chat-input-main">

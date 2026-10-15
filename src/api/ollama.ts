@@ -4,23 +4,10 @@ import { listen } from "@tauri-apps/api/event";
 import { join, tempDir } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
 
-export type ChatRole = "system" | "user" | "assistant";
-
-export interface ChatRequestMessage {
-  role: ChatRole;
-  content: string;
-}
-
-export type OllamaResult<T> = { ok: true; value: T } | { ok: false; error: OllamaErrorKind; message: string };
-
-export type OllamaErrorKind =
-  | "not_configured"
-  | "connection_refused"
-  | "timeout"
-  | "model_missing"
-  | "model_error"
-  | "cancelled"
-  | "unknown";
+import type { ChatRequestMessage, GenerationOptions, InferenceResult, InferenceErrorKind } from "./inference/types";
+export type { ChatRole, ChatRequestMessage } from "./inference/types";
+export type OllamaResult<T> = InferenceResult<T>;
+export type OllamaErrorKind = InferenceErrorKind;
 
 export interface PullProgressUpdate {
   status: string;
@@ -73,7 +60,7 @@ const OLLAMA_INSTALLER_PATH = "/download/OllamaSetup.exe";
 // This is prompt-level steering, not enforcement — a small local model can
 // still ignore it. It's paired with the in-app "flag for review" control so
 // a human catches what slips through, rather than relying on this alone.
-const BIAS_MITIGATION_GUARDRAIL =
+export const BIAS_MITIGATION_GUARDRAIL =
   "When drafting content, avoid stereotypes or biased assumptions based on race, ethnicity, gender, disability, " +
   "language, immigration status, religion, or socioeconomic status. Describe students, families, and staff " +
   "fairly and respectfully, and stick to what the teacher's notes actually say rather than filling in assumptions.";
@@ -561,7 +548,7 @@ export async function checkConnection(): Promise<OllamaResult<void>> {
 
 async function sendChatNow(
   messages: ChatRequestMessage[],
-  signal: AbortSignal | undefined,
+  options: GenerationOptions | undefined,
 ): Promise<OllamaResult<string>> {
   const settings = loadSettings();
   const requestId = generateRequestId("chat");
@@ -579,7 +566,7 @@ async function sendChatNow(
       }),
       requestId,
       timeoutMs: requestTimeoutMs,
-      signal,
+      signal: options?.signal,
       onLine: (line) => {
         const event = JSON.parse(line) as ChatStreamEvent;
 
@@ -590,6 +577,7 @@ async function sendChatNow(
         const chunk = event.message?.content;
         if (typeof chunk === "string") {
           assistantText += chunk;
+          options?.onChunk?.(chunk);
         }
       },
     });
@@ -644,12 +632,7 @@ async function sendChatNow(
 
 export async function sendChat(
   messages: ChatRequestMessage[],
-  options?: {
-    /** Aborted when the caller (e.g. a chat panel) unmounts mid-generation. */
-    signal?: AbortSignal;
-    /** Fired synchronously if another generation is already running/queued app-wide. */
-    onQueued?: () => void;
-  },
+  options?: GenerationOptions,
 ): Promise<OllamaResult<string>> {
   if (!isConfigured()) {
     return { ok: false, error: "not_configured", message: NOT_CONFIGURED_MESSAGE };
@@ -663,5 +646,5 @@ export async function sendChat(
     options?.onQueued?.();
   }
 
-  return enqueueChatTask(() => sendChatNow(messages, options?.signal));
+  return enqueueChatTask(() => sendChatNow(messages, options));
 }

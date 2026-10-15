@@ -23,6 +23,8 @@ import {
 import { initHistoryStore } from "./storage/historyStore";
 import type { SessionSummary } from "./storage/types";
 import { Spinner } from "./components/ui/Spinner";
+import { integratedBuild } from "./api/inference/backend";
+import { IntegratedSetup } from "./components/IntegratedSetup";
 
 type View =
   | "library"
@@ -65,7 +67,8 @@ function App() {
   const [isHistoryReady, setIsHistoryReady] = useState(false);
   const assistantPreamble = buildAssistantPreamble(prompts);
   const [view, setView] = useState<View>("library");
-  const [setupStage, setSetupStage] = useState<SetupStage>("checking");
+  const [setupStage, setSetupStage] = useState<SetupStage>(integratedBuild ? "ready" : "checking");
+  const [integratedReady, setIntegratedReady] = useState(false);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [isRecheckingSetup, setIsRecheckingSetup] = useState(false);
   const [setupBaseUrl, setSetupBaseUrl] = useState(
@@ -123,7 +126,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    void evaluateLaunchGate(false);
+    if (!integratedBuild) void evaluateLaunchGate(false);
   }, [evaluateLaunchGate]);
 
   useEffect(() => {
@@ -316,6 +319,10 @@ function App() {
   const showSetupFlow = setupStage !== "ready";
   const isStarterModelDownloading = starterModelDownloadState !== null;
   const activeStarterModelDownload = starterModelDownloadState;
+
+  if (integratedBuild && !integratedReady) {
+    return <main className="app-shell app-shell-setup"><IntegratedSetup onDone={() => setIntegratedReady(true)} autoLoad /></main>;
+  }
 
   return (
     <main className={`app-shell ${showSetupFlow ? "app-shell-setup" : ""}`.trim()}>
@@ -531,7 +538,7 @@ function App() {
         </div>
       )}
 
-      {!showSetupFlow && view === "settings" && <SettingsPanel onDone={backToLibrary} />}
+      {!showSetupFlow && view === "settings" && (integratedBuild ? <IntegratedSetup onDone={backToLibrary} /> : <SettingsPanel onDone={backToLibrary} />)}
       {!showSetupFlow && view === "personalize" && <PersonalizePanel onDone={backToLibrary} />}
       {!showSetupFlow && view === "history" && isHistoryReady && (
         <HistoryPanel onBack={backToLibrary} onResumeSession={resumeSession} />

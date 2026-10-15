@@ -30,3 +30,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Integrated model artifacts and private local inputs
+*.gguf
+/local-ai-data/
+/local-ai-private/
+/src-tauri/resources/local-ai-runtime/

@@ -1,0 +1,4 @@
+{
+  "build": { "beforeBuildCommand": "npm run build:integrated" },
+  "bundle": { "resources": { "resources/local-ai-runtime/": "local-ai-runtime/" } }
+}
