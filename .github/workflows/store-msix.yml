@@ -2,6 +2,11 @@ name: store-msix-integrated
 
 on:
   workflow_dispatch:
+    inputs:
+      development_only:
+        description: Build the isolated development executable for local smoke testing
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -30,12 +35,13 @@ jobs:
       - name: Test inference transport and cancellation
         run: npm run test:inference
       - name: Test native verification and process cleanup
-        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --lib integrated::tests
+        run: cargo test --locked --features integrated-only --manifest-path src-tauri/Cargo.toml --lib
       - name: Download and verify pinned CPU runtime
         run: npm run local-ai:runtime
       - name: Stage pinned runtime and Microsoft CRT
         run: npm run local-ai:stage
       - name: Download and verify bundled Qwen3.5-4B weights
+        if: ${{ !inputs.development_only }}
         run: npm run local-ai:model -- qwen3.5-4b-q4-k-m
       - name: Validate unchanged app version
         shell: pwsh
@@ -51,18 +57,41 @@ jobs:
             throw 'Cargo application version must remain 0.5.5.'
           }
       - name: Build integrated production frontend and executable
+        if: ${{ !inputs.development_only }}
         run: node scripts/build-integrated-release.mjs --production --online
+      - name: Build isolated integrated development executable
+        if: ${{ inputs.development_only }}
+        run: node scripts/build-integrated-release.mjs --online
+      - name: Record development build source
+        if: ${{ inputs.development_only }}
+        shell: pwsh
+        run: |
+          @{ commit = $env:GITHUB_SHA; runId = $env:GITHUB_RUN_ID } | ConvertTo-Json | Set-Content local-ai-data/dev-build-source.json
+      - name: Upload isolated development executable and verification records
+        if: ${{ inputs.development_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-ed-ai-integrated-dev-executable
+          path: |
+            src-tauri/target/release/educatorllm.exe
+            local-ai-data/integrated-build.json
+            local-ai-data/dev-build-source.json
+          if-no-files-found: error
       - name: Package integrated production MSIX with bundled model
+        if: ${{ !inputs.development_only }}
         shell: pwsh
         run: ./scripts/package-integrated-msix.ps1 -Production -OutputDirectory src-tauri/target/msix
       - name: Verify actual MSIX identity, assets, executable and bundled files
+        if: ${{ !inputs.development_only }}
         shell: pwsh
         run: |
           $version = (Get-Content src-tauri/gen/windows/bundle.config.json -Raw | ConvertFrom-Json).version
           ./scripts/verify-integrated-msix.ps1 -PackagePath "src-tauri/target/msix/Local Ed AI_${version}_x64.msix"
       - name: List generated MSIX artifacts
+        if: ${{ !inputs.development_only }}
         run: Get-ChildItem src-tauri/target/msix -File
       - name: Upload production candidate MSIX
+        if: ${{ !inputs.development_only }}
         uses: actions/upload-artifact@v4
         with:
           name: local-ed-ai-integrated-msix
