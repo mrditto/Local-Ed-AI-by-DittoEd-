@@ -9,7 +9,7 @@ import {
   copyToClipboard,
   saveGeneratedFile,
 } from "../utils/exportMessage";
-import { openFeedbackEmail } from "../utils/feedback";
+import { FEEDBACK_EMAIL, openFeedbackEmail } from "../utils/feedback";
 
 interface MessageActionsProps {
   markdown: string;
@@ -51,8 +51,6 @@ export function MessageActions({ markdown, disabled, defaultFilenameSeed, flagge
         quoted: { label: "The AI's response", text: markdown },
       });
       onFlag(noteInput);
-      setShowFlagForm(false);
-      setNoteInput("");
       setJustEmailed(true);
       if (emailedResetRef.current) window.clearTimeout(emailedResetRef.current);
       emailedResetRef.current = window.setTimeout(() => setJustEmailed(false), THANKS_RESET_MS);
@@ -153,15 +151,15 @@ export function MessageActions({ markdown, disabled, defaultFilenameSeed, flagge
         <Button
           type="button"
           variant="ghost"
-          disabled={disabled || pendingAction !== null || flagged}
+          disabled={disabled || pendingAction !== null}
           onClick={() => setShowFlagForm((prev) => !prev)}
         >
-          {flagged ? "🚩 Flagged" : "🚩 Flag for review"}
+          {flagged ? "🚩 Review report" : "🚩 Flag for review"}
         </Button>
         {actionError && <span className="chat-message-actions-error">{actionError}</span>}
       </div>
 
-      {showFlagForm && !flagged && (
+      {showFlagForm && (
         <div className="chat-message-flag-form">
           <label htmlFor="flag-note">What was wrong with this response? (optional)</label>
           <textarea
@@ -180,6 +178,16 @@ export function MessageActions({ markdown, disabled, defaultFilenameSeed, flagge
             </Button>
           </div>
           <p className="settings-hint">
+            No email app? Copy the report below into your webmail and send it to {FEEDBACK_EMAIL}.
+            Review it first and remove student names or identifying details.
+          </p>
+          <textarea
+            aria-label="Report text to copy into email"
+            readOnly
+            rows={5}
+            value={`To: ${FEEDBACK_EMAIL}\nSubject: Local Ed AI — response flagged for review\n\n${noteInput}\n\nAI response:\n${markdown}`}
+          />
+          <p className="settings-hint">
             Opens your email app with this response pre-filled, addressed to brad@reactallegany.org. Nothing is
             sent automatically — review the draft and hit Send yourself.
           </p>
@@ -187,7 +195,7 @@ export function MessageActions({ markdown, disabled, defaultFilenameSeed, flagge
       )}
 
       {justEmailed && (
-        <p className="chat-message-flag-thanks">Thanks for letting us know — check your email app to send it.</p>
+        <p className="chat-message-flag-thanks">Email handoff requested. Local Ed AI has not sent your report; review and send it in your email app.</p>
       )}
     </div>
   );

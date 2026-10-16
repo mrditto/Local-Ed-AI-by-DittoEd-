@@ -42,7 +42,7 @@ $modelDestination = Join-Path $staging 'local-ai-models'
 New-Item -ItemType Directory -Path $modelDestination -Force | Out-Null
 Copy-Item -LiteralPath $modelSource -Destination $modelDestination
 $storeConfig = Get-Content (Join-Path $repository 'src-tauri/gen/windows/bundle.config.json') -Raw | ConvertFrom-Json
-$packageVersion = if ($Production) { [string]$storeConfig.version } else { '0.5.5.5' }
+$packageVersion = if ($Production) { [string]$storeConfig.version } else { '0.5.5.6' }
 if ($packageVersion -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw 'Package version must have four numeric components.' }
 $versionParts = @($packageVersion.Split('.') | ForEach-Object { [uint32]::Parse($_) })
 if (@($versionParts | Where-Object { $_ -gt 65535 }).Count -or ($Production -and ($versionParts[0] -eq 0 -or $versionParts[3] -ne 0))) { throw 'Invalid Store package version.' }
