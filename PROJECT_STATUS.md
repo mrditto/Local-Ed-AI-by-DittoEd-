@@ -1,4 +1,4 @@
-> Historical implementation notes — not current Microsoft Store installation instructions. For the integrated Windows build and verified limitations, see the current repository README and integrated build handoff. Updated notice: October 15, 2026.
+> Current release: Local Ed AI passed Microsoft Store certification and was verified published on October 19, 2026. Store package 1.0.3.0; application 0.5.5. Install: https://apps.microsoft.com/detail/9P36L75MD2NS . See [published release status](docs/local-ai/RELEASE-STATUS.md) for provenance and limitations. The implementation notes below are historical, not current installation instructions.
 
 # Project status — read this first in a new session
 
