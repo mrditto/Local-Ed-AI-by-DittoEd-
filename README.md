@@ -2,7 +2,7 @@
 
 Echoing the educator, not replacing the magic.
 
-A local AI drafting assistant for educators: lesson planning, differentiation, assessment, feedback and Maryland IEP drafts. Review every AI-assisted draft before use.
+A local AI drafting assistant for educators: lesson planning, differentiation, assessment, feedback and IEP drafts. Review every AI-assisted draft before use.
 
 ## Current status — October 19, 2026
 
@@ -17,7 +17,7 @@ The [verified Windows workflow](https://github.com/mrditto/Local-Ed-AI-by-DittoE
 ## Educator workflows
 
 - Prompt library and Ask DittoEd for editable drafts.
-- Maryland IEP narrative drafting, with Word/PDF draft exports for team review.
+- IEP narrative drafting, with Word/PDF draft exports for team review.
 - Local chat and IEP history, projects, search and reusable attachments.
 - Tone, language and response-length preferences.
 - Generation cancellation and recovery.
