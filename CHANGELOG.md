@@ -1,3 +1,10 @@
+## Microsoft Store publication — 2026-10-19
+
+- Published integrated Windows x64 package 1.0.3.0, app version 0.5.5.
+- Bundled Qwen3.5-4B and CPU inference runtime; included-model setup needs no external AI installation.
+- Integrated-only native permissions/commands, classroom-safety guidance, and reusable email/webmail report text.
+- [Install from Microsoft Store](https://apps.microsoft.com/detail/9P36L75MD2NS). See [release evidence and limitations](docs/local-ai/RELEASE-STATUS.md).
+
 # Changelog
 
 All notable changes to Local Ed AI are documented here.

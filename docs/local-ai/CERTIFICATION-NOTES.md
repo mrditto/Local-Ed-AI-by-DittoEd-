@@ -1,3 +1,5 @@
+> Current release update — October 19, 2026: Store package **1.0.3.0** (app **0.5.5**) is published. See [release status](RELEASE-STATUS.md). Dated checkpoints below retain their historical meaning; publication does not erase recorded test limitations.
+
 # Integrated Store candidate review notes
 
 These are preparation notes, not a certification result or a submission.

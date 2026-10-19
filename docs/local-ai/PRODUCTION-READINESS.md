@@ -1,3 +1,5 @@
+> Current release update — October 19, 2026: Store package **1.0.3.0** (app **0.5.5**) is published. See [release status](RELEASE-STATUS.md). Dated checkpoints below retain their historical meaning; publication does not erase recorded test limitations.
+
 # Production readiness checkpoint October 12 2026
 
 The installed development package 0.5.5.2 verifies local model import/load, completed streaming, cancellation before and after visible output, incomplete-draft preservation, restart model recovery, history reopening, and normal engine shutdown. Bradley reports successful disconnected-internet Grade 4 energy lesson generation. These checks do not establish complete release readiness.

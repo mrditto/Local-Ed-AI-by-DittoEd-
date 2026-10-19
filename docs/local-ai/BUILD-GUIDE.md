@@ -1,3 +1,5 @@
+> Current release update — October 19, 2026: Store package **1.0.3.0** (app **0.5.5**) is published. See [release status](RELEASE-STATUS.md). Dated checkpoints below retain their historical meaning; publication does not erase recorded test limitations.
+
 # Local Ed AI: step-by-step build and agent handoff guide
 
 ## Working arrangement

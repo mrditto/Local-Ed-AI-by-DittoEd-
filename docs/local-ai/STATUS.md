@@ -1,3 +1,5 @@
+> Current release update — October 19, 2026: Store package **1.0.3.0** (app **0.5.5**) is published. See [release status](RELEASE-STATUS.md). Dated checkpoints below retain their historical meaning; publication does not erase recorded test limitations.
+
 # Build status
 
 Branch: codex/integrated-local-ai. Base: 7a457c62e7a240795bdd3a7b701e9363b8c17aa8.

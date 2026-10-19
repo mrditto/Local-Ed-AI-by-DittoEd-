@@ -1,3 +1,5 @@
+> Current release update — October 19, 2026: Store package **1.0.3.0** (app **0.5.5**) is published. See [release status](RELEASE-STATUS.md). Dated checkpoints below retain their historical meaning; publication does not erase recorded test limitations.
+
 # Integrated development MSIX build
 
 Run from repository root on Windows with the existing locked Node/Rust dependencies, MSVC toolchain, Windows SDK and WebView2 installed:
