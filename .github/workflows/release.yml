@@ -35,6 +35,8 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - run: npm ci
+      - name: Prepare pinned offline English OCR assets
+        run: npm run ocr:assets
 
       - uses: tauri-apps/tauri-action@v0
         env:

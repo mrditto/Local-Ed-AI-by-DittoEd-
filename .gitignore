@@ -36,3 +36,4 @@ dist-ssr
 /local-ai-data/
 /local-ai-private/
 /src-tauri/resources/local-ai-runtime/
+/public/ocr/

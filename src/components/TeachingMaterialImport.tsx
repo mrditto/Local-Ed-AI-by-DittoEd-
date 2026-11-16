@@ -22,6 +22,7 @@ export function TeachingMaterialImport({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const active = useRef<AbortController | null>(null);
+  const [ocr, setOcr] = useState(false);
   useEffect(() => () => active.current?.abort(), []);
 
   async function pick(event: React.ChangeEvent<HTMLInputElement>) {
@@ -38,6 +39,7 @@ export function TeachingMaterialImport({
         firstPage: Number(firstPage),
         lastPage: Number(lastPage),
         signal: controller.signal,
+        ocr,
       });
       if (!result.ok) {
         setError(result.error);
@@ -56,9 +58,19 @@ export function TeachingMaterialImport({
     <div className="material-file-import">
       <p>
         Import one file into this source. PDF defaults to file page 1; choose its range before
-        importing. All formats extract text only, not diagrams, images or reliable table layout.
+        importing. All formats supply text only, not diagram understanding or reliable table layout.
+        OCR can misread words, numbers and negation; check it against the original.
       </p>
       <div className="settings-field">
+        <label>
+          <input
+            type="checkbox"
+            checked={ocr}
+            disabled={busy || disabled}
+            onChange={(e) => setOcr(e.currentTarget.checked)}
+          />{" "}
+          Read scanned pages/photos (English OCR, on this computer)
+        </label>
         <label htmlFor={`${sourceId}-first-page`}>First PDF file page</label>
         <input
           id={`${sourceId}-first-page`}
@@ -83,7 +95,7 @@ export function TeachingMaterialImport({
         <input
           id={`${sourceId}-import`}
           type="file"
-          accept=".pdf,.docx,.txt,.md"
+          accept=".pdf,.docx,.txt,.md,.jpg,.jpeg,.png"
           disabled={busy || disabled}
           onChange={(e) => void pick(e)}
         />

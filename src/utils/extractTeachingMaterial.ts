@@ -11,7 +11,7 @@ type Result = { ok: true; text: string; scope: string } | { ok: false; error: st
 
 export async function extractTeachingMaterial(
   file: File,
-  options: { firstPage: number; lastPage: number; signal: AbortSignal },
+  options: { firstPage: number; lastPage: number; signal: AbortSignal; ocr?: boolean },
 ): Promise<Result> {
   const { signal, firstPage, lastPage } = options;
   const cancelled = (): Result => ({
@@ -22,17 +22,24 @@ export async function extractTeachingMaterial(
   if (file.size > MAX_MATERIAL_FILE_BYTES)
     return { ok: false, error: "Choose a file smaller than 8 MB, or paste the relevant excerpt." };
   const extension = file.name.split(".").pop()?.toLowerCase();
-  if (!["pdf", "docx", "txt", "md"].includes(extension ?? "")) {
+  const image = ["png", "jpg", "jpeg"].includes(extension ?? "");
+  if (image && !options.ocr)
+    return { ok: false, error: "Enable English OCR, then select the photo again." };
+  if (!["pdf", "docx", "txt", "md", "png", "jpg", "jpeg"].includes(extension ?? "")) {
     return {
       ok: false,
-      error:
-        "Use a text-based PDF, DOCX, TXT or MD file. Photos and scanned pages need OCR, which is not supported yet.",
+      error: "Use PDF, DOCX, TXT, MD, JPG or PNG. Photos/scans require the English OCR option.",
     };
   }
   try {
     let text = "",
       scope = "";
-    if (extension === "pdf") {
+    if (image) {
+      text = await (await import("./ocrText")).recognizeImage(file, signal);
+      scope = "OCR text from image — confirm the original page or section";
+    } else if (extension === "pdf") {
+      if (options.ocr && lastPage - firstPage >= 3)
+        return { ok: false, error: "Read at most three scanned PDF pages at a time." };
       if (
         !Number.isInteger(firstPage) ||
         !Number.isInteger(lastPage) ||
@@ -62,17 +69,39 @@ export async function extractTeachingMaterial(
           if (signal.aborted) return cancelled();
           const page = await pdf.getPage(pageNumber);
           try {
-            const content = await page.getTextContent();
-            const pageText = content.items
-              .map((item) => ("str" in item ? item.str + (item.hasEOL ? "\n" : " ") : ""))
-              .join("")
-              .trim();
+            let pageText: string;
+            if (options.ocr) {
+              const original = page.getViewport({ scale: 1 });
+              const viewport = page.getViewport({
+                scale: Math.min(2, 2000 / Math.max(original.width, original.height)),
+              });
+              const canvas = document.createElement("canvas");
+              canvas.width = Math.floor(viewport.width);
+              canvas.height = Math.floor(viewport.height);
+              try {
+                const context = canvas.getContext("2d");
+                if (!context) throw new Error("Could not prepare page image");
+                await page.render({ canvasContext: context, viewport }).promise;
+                pageText = await (await import("./ocrText")).recognizeCanvas(canvas, signal);
+              } finally {
+                canvas.width = 0;
+                canvas.height = 0;
+              }
+            } else {
+              const content = await page.getTextContent();
+              pageText = content.items
+                .map((item) => ("str" in item ? item.str + (item.hasEOL ? "\n" : " ") : ""))
+                .join("")
+                .trim();
+            }
             if (!pageText)
               return {
                 ok: false,
-                error: `PDF file page ${pageNumber} has no readable text. It may be scanned or blank. Choose other pages or paste text; images and diagrams are not read.`,
+                error: `PDF file page ${pageNumber} has no readable text. Try the English OCR option, choose other pages or paste text. Diagrams are not interpreted.`,
               };
-            pages.push(`[PDF file page ${pageNumber}]\n${pageText}`);
+            pages.push(
+              `[${options.ocr ? "OCR text, " : ""}PDF file page ${pageNumber}]\n${pageText}`,
+            );
             if (pages.join("\n\n").length > MAX_TEXT_CHARS)
               return {
                 ok: false,
@@ -84,7 +113,7 @@ export async function extractTeachingMaterial(
           }
         }
         text = pages.join("\n\n");
-        scope = `PDF file pages ${firstPage}-${lastPage} (file positions, not printed book page numbers)`;
+        scope = `${options.ocr ? "OCR text, " : ""}PDF file pages ${firstPage}-${lastPage} (file positions, not printed book page numbers)`;
       } finally {
         signal.removeEventListener("abort", abort);
         await task.destroy().catch(() => {});

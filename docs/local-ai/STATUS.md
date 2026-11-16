@@ -1,5 +1,9 @@
 # Build status
 
+## November 16, 2026 — hosted curriculum build and local English OCR
+
+Owner authorized push: cc1e68b public feature branch, development-only run 43864650673 SUCCESS, artifact 14224962917 metadata verified (not downloaded/installed). New OCR checkpoint adds pinned Tesseract.js/core 7.0.0, official English data, all-local staged assets/licenses, explicit photo/scanned-PDF OCR and required review. Clean npm ci, 21 materials/OCR + 10 inference tests, typecheck/lint/integrated frontend build and offline-blocked browser/built-asset checks passed. No new OCR Windows build result yet. See CURRICULUM-CHECKPOINT.md for exact hashes, environment handling and limitations. Existing 11 audit findings unchanged; triage before release. No production MSIX, merge or Store update.
+
 ## November 16, 2026 — native build environment blocker
 
 Attempted isolated integrated dev build. Frontend PASS; Rust-generated ICU build scripts blocked by Windows Application Control (4551). No new desktop EXE/MSIX or receipt. Did not disable/bypass policy. Workflow now includes test:materials; YAML/step verified. Public push/workflow not performed. OCR proposal saved in OCR-IMPLEMENTATION-PLAN.md, not implemented. See CURRICULUM-CHECKPOINT.md; public feature-branch build needs owner authorization.

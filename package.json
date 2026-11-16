@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "node scripts/prepare-ocr-assets.mjs --offline && tsc && vite build && node scripts/verify-ocr-assets.mjs",
     "preview": "vite preview",
     "tauri": "tauri",
     "lint": "eslint . --ext ts,tsx",
@@ -14,13 +14,14 @@
     "tauri:windows:build": "tauri-windows-bundle build",
     "tauri:windows:msix": "tauri-windows-bundle build --runner npm --verbose",
     "test:inference": "node --experimental-vm-modules --test tests/inference.test.mjs tests/sse.test.mjs",
-    "test:materials": "node --experimental-vm-modules --test tests/saved-materials.test.mjs tests/curriculum-context.test.mjs tests/curriculum-sources.test.mjs tests/material-import.test.mjs",
+    "test:materials": "node --experimental-vm-modules --test tests/saved-materials.test.mjs tests/curriculum-context.test.mjs tests/curriculum-sources.test.mjs tests/material-import.test.mjs tests/ocr.test.mjs",
     "local-ai:runtime": "node scripts/download-local-ai-runtime.mjs",
     "local-ai:model": "node scripts/download-local-ai-model.mjs",
     "local-ai:stage": "pwsh -NoProfile -File scripts/stage-local-ai-runtime.ps1",
     "build:integrated": "node scripts/build-integrated.mjs",
     "tauri:integrated:build": "node scripts/build-integrated-release.mjs",
-    "tauri:integrated:msix": "pwsh -NoProfile -File scripts/package-integrated-msix.ps1"
+    "tauri:integrated:msix": "pwsh -NoProfile -File scripts/package-integrated-msix.ps1",
+    "ocr:assets": "node scripts/prepare-ocr-assets.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -36,7 +37,8 @@
     "pdfjs-dist": "^4.10.38",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-markdown": "^10.1.0"
+    "react-markdown": "^10.1.0",
+    "tesseract.js": "7.0.0"
   },
   "devDependencies": {
     "@choochmeque/tauri-windows-bundle": "^0.2.0",

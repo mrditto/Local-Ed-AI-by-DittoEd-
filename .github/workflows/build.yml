@@ -30,6 +30,8 @@ jobs:
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
       - run: npm ci
+      - name: Prepare pinned offline English OCR assets
+        run: npm run ocr:assets
       - run: npm run tauri build
       - uses: actions/upload-artifact@v4
         with:

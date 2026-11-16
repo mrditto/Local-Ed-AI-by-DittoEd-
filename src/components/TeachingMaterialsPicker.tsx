@@ -109,7 +109,8 @@ export function TeachingMaterialsPicker({ value, onChange, onBusyChange }: Props
       <legend>My teaching materials</legend>
       <p>
         Paste short excerpts, import selected text, or choose saved text. Give each source a role.
-        Photos, diagrams and whole-book searching are not supported.
+        Enable English OCR to read text from photos/scans. Diagrams and whole-book searching are not
+        supported.
       </p>
       <details>
         <summary>Using your materials</summary>

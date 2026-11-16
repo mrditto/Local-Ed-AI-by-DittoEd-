@@ -28,6 +28,8 @@ jobs:
           targets: x86_64-pc-windows-msvc
       - name: Install locked npm dependencies
         run: npm ci
+      - name: Prepare pinned offline English OCR assets
+        run: npm run ocr:assets
       - name: Type-check frontend
         run: npm run typecheck
       - name: Lint frontend

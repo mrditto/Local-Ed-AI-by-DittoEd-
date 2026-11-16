@@ -1,6 +1,8 @@
 # Offline OCR: next implementation checkpoint
 
-Status: researched proposal, November 16, 2026. Not installed, implemented or shipped.
+Status: initial English OCR implemented and browser-tested locally November 16, 2026; not released. See CURRICULUM-CHECKPOINT.md for exact evidence and remaining limits. The numbered steps below preserve the design checklist, not a claim that every acceptance check is complete.
+
+Development: run npm ci, then npm run ocr:assets once with internet to fetch pinned build inputs. Builds thereafter stage and verify cached OCR inputs offline. All three build workflows prepare these inputs before compiling. End users must not need this developer command or any OCR download. The shipped frontend assets include the worker, compatible CPU cores, English data and license files; Windows installed-package checks remain pending.
 
 Use a bundled OCR engine plus bundled English recognition data, loaded only when requested. Tesseract.js is a candidate because its own documentation supports local workerPath, corePath and langPath. Its defaults use CDNs, so defaults are unacceptable for this product's offline/privacy promise.
 
