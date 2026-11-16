@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { sendChat, type ChatRequestMessage, type InferenceErrorKind } from "../api/inference";
 import type { SessionAttachmentMeta } from "../storage/types";
 import { integratedBuild } from "../api/inference/backend";
+import type { CurriculumSourceRef } from "../utils/curriculumSources";
 
 export interface ChatMessage {
+  curriculumSources?: CurriculumSourceRef[];
   id: string;
   role: "user" | "assistant" | "error";
   text: string;
@@ -18,6 +20,7 @@ export interface ChatMessage {
 }
 
 interface SendMessageOptions {
+  curriculumSources?: CurriculumSourceRef[];
   hiddenPrefix?: string;
   attachment?: SessionAttachmentMeta;
 }
@@ -92,6 +95,7 @@ export function useChat(options?: UseChatOptions) {
       createdAt: Date.now(),
       attachment: sendOptions?.attachment,
       outgoingContent: outgoingText,
+      curriculumSources: sendOptions?.curriculumSources,
     };
     appendMessage(userMessage);
     setIsSending(true);

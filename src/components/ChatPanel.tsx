@@ -23,11 +23,13 @@ import {
 } from "../config/personalization";
 import { createChatSession, getSessionBody, listSavedFiles, saveChatTurn, saveFileToLibrary } from "../storage/historyStore";
 import type { SavedFile, SessionAttachmentMeta, StoredChatMessage } from "../storage/types";
+import { sourcesForResponse, withCurriculumSourceNotes, type CurriculumSourceRef } from "../utils/curriculumSources";
 
 interface ChatPanelProps {
   prompt: Prompt;
   onBack: () => void;
   initialMessage?: string;
+  initialSources?: CurriculumSourceRef[];
   messagePreamble?: string;
   surface: "prompt" | "assistant";
   resumeSessionId?: string;
@@ -74,6 +76,7 @@ function toStoredMessages(messages: ChatMessage[]): StoredChatMessage[] {
     createdAt: m.createdAt,
     attachment: m.attachment,
     outgoingContent: m.outgoingContent,
+    curriculumSources: m.curriculumSources,
     flagged: m.flagged,
     flagNote: m.flagNote,
   }));
@@ -136,6 +139,7 @@ function ChatPanelBody({
   prompt,
   onBack,
   initialMessage,
+  initialSources,
   messagePreamble,
   surface,
   initialSessionId,
@@ -218,7 +222,7 @@ function ChatPanelBody({
   }, [messages]);
 
   const sendWithPreamble = useCallback(
-    (text: string, attachmentPrefix?: string, attachmentMeta?: SessionAttachmentMeta) => {
+    (text: string, attachmentPrefix?: string, attachmentMeta?: SessionAttachmentMeta, curriculumSources?: CurriculumSourceRef[]) => {
       const isFirstSessionMessage = !hasSentFirstSessionMessage.current;
       hasSentFirstSessionMessage.current = true;
       const hiddenPrefixParts: string[] = [];
@@ -261,6 +265,7 @@ function ChatPanelBody({
       }
       const hiddenPrefix = hiddenPrefixParts.join("");
       const sendOptions = {
+        ...(curriculumSources ? { curriculumSources } : {}),
         ...(hiddenPrefix.length > 0 ? { hiddenPrefix } : {}),
         ...(attachmentMeta ? { attachment: attachmentMeta } : {}),
       };
@@ -274,8 +279,8 @@ function ChatPanelBody({
     const message = initialMessage?.trim();
     if (!message) return;
     hasSentInitialMessage.current = true;
-    void sendWithPreamble(message);
-  }, [connectionState, initialMessage, sendWithPreamble]);
+    void sendWithPreamble(message, undefined, undefined, initialSources);
+  }, [connectionState, initialMessage, initialSources, sendWithPreamble]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -365,7 +370,7 @@ function ChatPanelBody({
       )}
 
       <div className="chat-messages">
-        {messages.map((msg) => (
+        {messages.map((msg, index) => (
           <div key={msg.id} className={`chat-message chat-message-${msg.role}`}>
             {msg.role === "assistant" ? (
               <div className="chat-message-markdown">
@@ -376,7 +381,7 @@ function ChatPanelBody({
             )}
             {msg.role === "assistant" && (
               <MessageActions
-                markdown={msg.text}
+                markdown={withCurriculumSourceNotes(msg.text, sourcesForResponse(messages, index))}
                 disabled={isSending}
                 defaultFilenameSeed={{ title: deriveChatSessionTitle(prompt, messages), fallbackText: msg.text }}
                 flagged={msg.flagged ?? false}
@@ -384,6 +389,13 @@ function ChatPanelBody({
               />
             )}
             {msg.role === "assistant" && <DisclaimerFooter />}
+            {msg.role === "assistant" && sourcesForResponse(messages, index).length > 0 &&
+              <details className="curriculum-source-notes"><summary>Materials supplied for this draft</summary>
+                <ul>{sourcesForResponse(messages, index).map(source => <li key={source.sourceId}>
+                  {source.sourceId}: {source.title} — {source.section} ({source.role})
+                </li>)}</ul>
+                <p>Educator-supplied descriptions, not verified citations. Review the draft against the original materials. Source notes are included when copying or exporting this response.</p>
+              </details>}
             {msg.role === "assistant" && prompt.category === "sped" && <VerifyFooter />}
             {msg.role === "error" && <ErrorReportLink errorText={msg.text} />}
           </div>

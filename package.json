@@ -14,6 +14,7 @@
     "tauri:windows:build": "tauri-windows-bundle build",
     "tauri:windows:msix": "tauri-windows-bundle build --runner npm --verbose",
     "test:inference": "node --experimental-vm-modules --test tests/inference.test.mjs tests/sse.test.mjs",
+    "test:materials": "node --experimental-vm-modules --test tests/saved-materials.test.mjs tests/curriculum-context.test.mjs tests/curriculum-sources.test.mjs tests/material-import.test.mjs",
     "local-ai:runtime": "node scripts/download-local-ai-runtime.mjs",
     "local-ai:model": "node scripts/download-local-ai-model.mjs",
     "local-ai:stage": "pwsh -NoProfile -File scripts/stage-local-ai-runtime.ps1",

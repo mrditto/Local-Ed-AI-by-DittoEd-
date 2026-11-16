@@ -1,5 +1,25 @@
 # Build status
 
+## November 16, 2026 — native build environment blocker
+
+Attempted isolated integrated dev build. Frontend PASS; Rust-generated ICU build scripts blocked by Windows Application Control (4551). No new desktop EXE/MSIX or receipt. Did not disable/bypass policy. Workflow now includes test:materials; YAML/step verified. Public push/workflow not performed. OCR proposal saved in OCR-IMPLEMENTATION-PLAN.md, not implemented. See CURRICULUM-CHECKPOINT.md; public feature-branch build needs owner authorization.
+
+## November 16, 2026 — file import checkpoint
+
+Role-aware per-source PDF/DOCX/TXT/MD import added, with PDF file-page selection, explicit preview/review and no silent truncation. Unreadable imports retain old text but reset review; imported edits require reconfirmation. Materials 18/18, inference 10/10, typecheck/lint/integrated frontend build/diff checks PASS. Browser actual PDF.js/Mammoth three-source import and failure/review/mobile checks PASS. Details/evidence/limits in CURRICULUM-CHECKPOINT.md. No OCR, new installed package or release. Next packaged and classroom checks; OCR still needed for textbook photos.
+
+## November 16, 2026 — source notes and native experiment
+
+See CURRICULUM-CHECKPOINT.md. Source metadata now persists in chat history, appears beside drafts and is included in copy/Word/PDF via deterministic footer. Actual browser save/reload/export checks passed; Word XML/PDF source labels verified after correcting PDF spacing. Direct existing llama-server + Qwen3.5-4B sample with three source roles completed normally in ~56s, 710 prompt/161 completion tokens; reviewed as successful for this one teacher-authored lesson sample only. Not installed desktop/Tauri acceptance. Materials 13/13, inference 10/10, typecheck/lint/integrated frontend build/diff checks passed. No new MSIX or publication. Next role-aware file imports, with packaged/context/teacher evaluations still pending.
+
+## November 12, 2026 — materials panel implemented locally
+
+See CURRICULUM-CHECKPOINT.md for exact changes/evidence. Shared three-source role-aware pasted-text/saved-excerpt workflow added to lesson planning/differentiation with explicit target, scope, alignment/extension choice and no silent shortening. Materials tests 10/10, inference tests 10/10, typecheck/lint/integrated frontend build PASS. Browser harness with real wizard/IndexedDB passed save/reuse/request assembly/reset/limits/mobile overflow checks; native inference was not exercised. No packaged build, push or release. Next native installed grounding/context and export checks, then multi-file extraction; photos/OCR still unsupported.
+
+## November 11, 2026 — curriculum feature worktree
+
+Current checkpoint: CURRICULUM-CHECKPOINT.md. Feature branch feature/curriculum-materials based on integrated ac9cb9e; local/uncommitted saved-material identity fix plus regression tests. All five materials tests, ten inference tests, typecheck, lint and integrated frontend build passed. No MSIX/publication or curriculum UI yet. Dependencies reused via node_modules junction; no npm ci performed. Original worktree/data/documentation preserved. Next implement bounded pasted-text materials picker for lesson planning and differentiation. Below is historical build status from the base revision; published baseline is Store 1.0.3.0/app 0.5.5 per original checkout's later handoff.
+
 Branch: codex/integrated-local-ai. Base: 7a457c62e7a240795bdd3a7b701e9363b8c17aa8.
 
 ## Completed

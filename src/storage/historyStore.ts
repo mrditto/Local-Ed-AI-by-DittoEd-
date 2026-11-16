@@ -451,11 +451,13 @@ export async function listSavedFiles(): Promise<SavedFile[]> {
   return all.sort((a, b) => b.addedAt - a.addedAt);
 }
 
-/** Adds a file to the reuse library, or just bumps its recency if the same name+length was already saved. */
+/** Reuse only the same named content and scope; revisions remain separate saved resources. */
 export async function saveFileToLibrary(input: { fileName: string; text: string; truncated: boolean }): Promise<void> {
   const db = await getDb();
   const all = await db.getAll("savedFiles");
-  const existing = all.find((f) => f.fileName === input.fileName && f.text.length === input.text.length);
+  const existing = all.find((f) =>
+    f.fileName === input.fileName && f.text === input.text && f.truncated === input.truncated,
+  );
 
   if (existing) {
     await db.put("savedFiles", { ...existing, addedAt: Date.now() });

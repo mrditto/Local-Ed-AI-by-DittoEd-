@@ -25,6 +25,7 @@ import type { SessionSummary } from "./storage/types";
 import { Spinner } from "./components/ui/Spinner";
 import { integratedBuild } from "./api/inference/backend";
 import { IntegratedSetup } from "./components/IntegratedSetup";
+import type { CurriculumSourceRef } from "./utils/curriculumSources";
 
 type View =
   | "library"
@@ -63,6 +64,7 @@ const ASSISTANT_PROMPT: Prompt = {
 function App() {
   const [activePrompt, setActivePrompt] = useState<Prompt | null>(null);
   const [initialMessage, setInitialMessage] = useState<string | undefined>(undefined);
+  const [initialSources, setInitialSources] = useState<CurriculumSourceRef[] | undefined>();
   const [resumeSessionId, setResumeSessionId] = useState<string | undefined>(undefined);
   const [isHistoryReady, setIsHistoryReady] = useState(false);
   const assistantPreamble = buildAssistantPreamble(prompts);
@@ -265,13 +267,15 @@ function App() {
   }
 
   function openPrompt(prompt: Prompt) {
+    setInitialSources(undefined);
     setActivePrompt(prompt);
     setInitialMessage(undefined);
     setResumeSessionId(undefined);
     setView(prompt.fields && prompt.fields.length > 0 ? "wizard" : "chat");
   }
 
-  function openChatFromWizard(message: string) {
+  function openChatFromWizard(message: string, sources?: CurriculumSourceRef[]) {
+    setInitialSources(sources);
     setInitialMessage(message);
     setResumeSessionId(undefined);
     setView("chat");
@@ -545,7 +549,7 @@ function App() {
       )}
       {!showSetupFlow && view === "history" && !isHistoryReady && <Spinner label="Loading history…" />}
       {!showSetupFlow && view === "wizard" && activePrompt && (
-        <PromptWizard prompt={activePrompt} onBack={backToLibrary} onGenerate={openChatFromWizard} />
+        <PromptWizard key={activePrompt.id} prompt={activePrompt} onBack={backToLibrary} onGenerate={openChatFromWizard} />
       )}
       {!showSetupFlow && view === "chat" && activePrompt && (
         <ChatPanel
@@ -553,6 +557,7 @@ function App() {
           onBack={backToLibrary}
           initialMessage={initialMessage}
           surface="prompt"
+          initialSources={initialMessage ? initialSources : undefined}
           resumeSessionId={resumeSessionId}
         />
       )}

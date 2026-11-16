@@ -319,10 +319,11 @@ export function buildPdfBytesFromMarkdown(markdown: string): Uint8Array {
         x = opts.leftMargin;
         firstWordOnLine = true;
       }
-      if (!firstWordOnLine) x += spaceWidth;
       ensureSpace();
-      doc.text(token, x, y);
-      x += tokenWidth;
+      // Write actual spaces, not just positioned gaps, so copied/extracted PDF
+      // source titles and other multiword text retain their word boundaries.
+      doc.text(firstWordOnLine ? token : ` ${token}`, x, y);
+      x += tokenWidth + (firstWordOnLine ? 0 : spaceWidth);
       firstWordOnLine = false;
     };
 

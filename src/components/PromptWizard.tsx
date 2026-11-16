@@ -3,11 +3,19 @@ import { Button } from "./ui/Button";
 import type { Prompt, PromptField } from "../prompts";
 import { VerifyFooter } from "./VerifyFooter";
 import { extractTextFromFile } from "../utils/extractText";
+import { TeachingMaterialsPicker } from "./TeachingMaterialsPicker";
+import type { CurriculumSourceRef } from "../utils/curriculumSources";
+import { MATERIAL_ROLES } from "../utils/curriculumContext";
+import {
+  composeCurriculumRequest,
+  emptyCurriculumContext,
+  supportsTeachingMaterials,
+} from "../utils/curriculumContext";
 
 interface PromptWizardProps {
   prompt: Prompt;
   onBack: () => void;
-  onGenerate: (message: string) => void;
+  onGenerate: (message: string, sources?: CurriculumSourceRef[]) => void;
 }
 
 function buildInitialValues(fields: PromptField[]): Record<string, string> {
@@ -57,15 +65,20 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
   const [fieldStatuses, setFieldStatuses] = useState<Record<string, string>>({});
   const [activeAttachmentFieldId, setActiveAttachmentFieldId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [useMaterials, setUseMaterials] = useState(false);
+  const [curriculum, setCurriculum] = useState(emptyCurriculumContext);
+  const [materialsBusy, setMaterialsBusy] = useState(false);
+  const materialsEnabled = supportsTeachingMaterials(prompt.id) && useMaterials;
+  const baseMessage = composeMessage(prompt, fields, values);
+  const curriculumRequest = materialsEnabled
+    ? composeCurriculumRequest(baseMessage, curriculum)
+    : null;
 
   const canGenerate = fields.every(
     (field) => !field.required || (values[field.id] ?? "").trim().length > 0,
   );
   const hasPolicyKeyword = REFERRAL_KEYWORDS.some((keyword) =>
-    Object.values(values)
-      .join(" ")
-      .toLowerCase()
-      .includes(keyword),
+    Object.values(values).join(" ").toLowerCase().includes(keyword),
   );
 
   function updateField(fieldId: string, value: string) {
@@ -77,8 +90,12 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!canGenerate) return;
-    onGenerate(composeMessage(prompt, fields, values));
+    if (!canGenerate || materialsBusy || (curriculumRequest && !curriculumRequest.ok)) return;
+    onGenerate(curriculumRequest?.ok ? curriculumRequest.message : baseMessage,
+      curriculumRequest?.ok ? curriculum.sources.map((source, index) => ({
+        sourceId: `S${index + 1}`, role: MATERIAL_ROLES[source.role],
+        title: source.label.trim(), section: source.scope.trim(),
+      })) : undefined);
   }
 
   function handleAttachClick(fieldId: string) {
@@ -155,7 +172,11 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
 
             {field.type === "textarea" && (
               <div className="field-attachment-controls">
-                <Button type="button" variant="secondary" onClick={() => handleAttachClick(field.id)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => handleAttachClick(field.id)}
+                >
                   Attach file
                 </Button>
                 <div className="attachment-hint">
@@ -164,7 +185,9 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
                 {fieldStatuses[field.id] && (
                   <div className="attachment-status">{fieldStatuses[field.id]}</div>
                 )}
-                {fieldErrors[field.id] && <div className="attachment-error">{fieldErrors[field.id]}</div>}
+                {fieldErrors[field.id] && (
+                  <div className="attachment-error">{fieldErrors[field.id]}</div>
+                )}
               </div>
             )}
 
@@ -195,6 +218,40 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
           </div>
         ))}
 
+        {supportsTeachingMaterials(prompt.id) && (
+          <section aria-label="Use my materials">
+            <label>
+              <input
+                type="checkbox"
+                checked={useMaterials}
+                disabled={materialsBusy}
+                onChange={(e) => setUseMaterials(e.currentTarget.checked)}
+              />{" "}
+              Use my materials
+            </label>
+            {materialsEnabled && (
+              <>
+                <TeachingMaterialsPicker
+                  value={curriculum}
+                  onChange={setCurriculum}
+                  onBusyChange={setMaterialsBusy}
+                />
+                {curriculumRequest && !curriculumRequest.ok && (
+                  <p role="status" className="attachment-error">
+                    {curriculumRequest.error}
+                  </p>
+                )}
+                {curriculumRequest?.ok && (
+                  <details>
+                    <summary>Preview request and sources ({curriculumRequest.bytes} bytes)</summary>
+                    <pre className="curriculum-preview">{curriculumRequest.message}</pre>
+                  </details>
+                )}
+              </>
+            )}
+          </section>
+        )}
+
         {hasPolicyKeyword && (
           <div className="wizard-warning-banner">
             <p>
@@ -207,7 +264,12 @@ export function PromptWizard({ prompt, onBack, onGenerate }: PromptWizardProps) 
         )}
 
         <div className="wizard-actions">
-          <Button type="submit" disabled={!canGenerate}>
+          <Button
+            type="submit"
+            disabled={
+              !canGenerate || materialsBusy || (curriculumRequest !== null && !curriculumRequest.ok)
+            }
+          >
             Generate
           </Button>
         </div>

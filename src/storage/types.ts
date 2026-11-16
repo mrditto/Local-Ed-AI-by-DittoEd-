@@ -1,4 +1,5 @@
 import type { IepDraftState } from "../data/iepDraft";
+import type { CurriculumSourceRef } from "../utils/curriculumSources";
 
 export type SessionType = "chat" | "iep";
 
@@ -9,6 +10,7 @@ export interface SessionAttachmentMeta {
 }
 
 export interface StoredChatMessage {
+  curriculumSources?: CurriculumSourceRef[];
   id: string;
   role: "user" | "assistant" | "error";
   /** Visible text, as rendered in the transcript. */
